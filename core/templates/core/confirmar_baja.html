@@ -1,0 +1,29 @@
+{% extends 'core/base.html' %}
+{% block titulo %}Confirmar baja{% endblock %}
+{% block topbar_titulo %}Dar de baja usuario{% endblock %}
+{% block contenido %}
+<div class="row justify-content-center">
+  <div class="col-lg-5">
+    <div class="card border-danger">
+      <div class="card-header text-danger">
+        <i class="bi bi-person-x me-2"></i>Confirmar baja lógica
+      </div>
+      <div class="card-body">
+        <p>Estás a punto de dar de baja a:</p>
+        <h5>{{ usuario.get_nombre_completo }}</h5>
+        <p class="text-muted small">Cédula: {{ usuario.cedula }} | Rol: {{ usuario.get_rol_display }}</p>
+        <div class="alert alert-warning">
+          <i class="bi bi-info-circle me-1"></i>
+          El usuario <strong>perderá acceso inmediato</strong> al sistema, pero todos sus registros históricos
+          (ventas, compras, inventario) se conservarán intactos para garantizar la trazabilidad.
+        </div>
+        <form method="post" class="d-flex gap-2 mt-3">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-danger">Confirmar baja</button>
+          <a href="{% url 'core:lista_usuarios' %}" class="btn btn-outline-secondary">Cancelar</a>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

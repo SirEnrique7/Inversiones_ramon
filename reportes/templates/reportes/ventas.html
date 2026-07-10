@@ -1,0 +1,143 @@
+{% extends 'core/base.html' %}
+{% block titulo %}Reporte de Ventas{% endblock %}
+{% block topbar_titulo %}Reporte de Ventas{% endblock %}
+
+{% block contenido %}
+
+<!-- Filtro de fechas -->
+<div class="card mb-4">
+  <div class="card-body py-2">
+    <form method="get" class="d-flex gap-2 align-items-center flex-wrap">
+      <label class="form-label mb-0 fw-semibold small">Período:</label>
+      <input type="date" name="fecha_inicio" value="{{ fecha_inicio|date:'Y-m-d' }}"
+             class="form-control form-control-sm" style="width:160px">
+      <span class="text-muted small">al</span>
+      <input type="date" name="fecha_fin" value="{{ fecha_fin|date:'Y-m-d' }}"
+             class="form-control form-control-sm" style="width:160px">
+      <input type="text" name="q" value="{{ q }}"
+             class="form-control form-control-sm" style="width:200px"
+             placeholder="Buscar factura o cliente...">
+      <button type="submit" class="btn btn-sm btn-primary">Aplicar</button>
+      <a href="{% url 'reportes:ventas' %}" class="btn btn-sm btn-link">Limpiar</a>
+    </form>
+  </div>
+</div>
+
+<!-- Stats -->
+<div class="row g-3 mb-4">
+  <div class="col-sm-6 col-xl-3">
+    <div class="stat-card">
+      <div class="stat-icon verde"><i class="bi bi-cash-stack"></i></div>
+      <div>
+        <div class="stat-num" style="font-size:1.2rem">
+          Bs. {{ totales.total_bs|default:"0"|floatformat:2 }}
+        </div>
+        <div class="stat-label">Total vendido (Bs.)</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-xl-3">
+    <div class="stat-card">
+      <div class="stat-icon azul"><i class="bi bi-currency-dollar"></i></div>
+      <div>
+        <div class="stat-num" style="font-size:1.2rem">
+          $ {{ totales.total_usd|default:"0"|floatformat:2 }}
+        </div>
+        <div class="stat-label">Total vendido (USD)</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-xl-3">
+    <div class="stat-card">
+      <div class="stat-icon naranja"><i class="bi bi-receipt"></i></div>
+      <div>
+        <div class="stat-num">{{ totales.cantidad|default:0 }}</div>
+        <div class="stat-label">Facturas emitidas</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3">
+
+  <!-- Top productos -->
+  <div class="col-lg-6">
+    <div class="card h-100">
+      <div class="card-header">Top 10 productos más vendidos</div>
+      <div class="card-body p-0">
+        <table class="table table-hover mb-0">
+          <thead><tr><th>Producto</th><th class="text-center">Unidades</th><th class="text-end">Ingresos (Bs.)</th></tr></thead>
+          <tbody>
+            {% for p in top_productos %}
+            <tr>
+              <td>
+                {{ p.producto__nombre }}
+                <div class="text-muted" style="font-size:.75rem"><code>{{ p.producto__codigo }}</code></div>
+              </td>
+              <td class="text-center"><strong>{{ p.unidades }}</strong></td>
+              <td class="text-end">Bs. {{ p.ingresos|floatformat:2 }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="3" class="text-center text-muted py-3">Sin datos en el período.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Por método de pago -->
+  <div class="col-lg-6">
+    <div class="card h-100">
+      <div class="card-header">Ventas por método de pago</div>
+      <div class="card-body p-0">
+        <table class="table mb-0">
+          <thead><tr><th>Método</th><th class="text-center">Cantidad</th><th class="text-end">Total (Bs.)</th></tr></thead>
+          <tbody>
+            {% for m in por_metodo %}
+            <tr>
+              <td>
+                {% if m.metodo_pago == 'punto' %}Punto de venta
+                {% elif m.metodo_pago == 'pago_movil' %}Pago móvil
+                {% elif m.metodo_pago == 'biopago' %}BioPago
+                {% elif m.metodo_pago == 'mixto' %}Mixto
+                {% elif m.metodo_pago == 'credito' %}A crédito / Fiado
+                {% else %}{{ m.metodo_pago }}{% endif %}
+              </td>
+              <td class="text-center">{{ m.cantidad }}</td>
+              <td class="text-end">Bs. {{ m.total|floatformat:2 }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="3" class="text-center text-muted py-3">Sin datos.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Ventas por día -->
+  {% if por_dia %}
+  <div class="col-12">
+    <div class="card">
+      <div class="card-header">Ventas diarias en el período</div>
+      <div class="card-body p-0">
+        <table class="table table-hover mb-0">
+          <thead><tr><th>Fecha</th><th class="text-center">Facturas</th><th class="text-end">Total (Bs.)</th></tr></thead>
+          <tbody>
+            {% for d in por_dia %}
+            <tr>
+              <td>{{ d.dia|date:"d/m/Y" }}</td>
+              <td class="text-center">{{ d.cantidad }}</td>
+              <td class="text-end">Bs. {{ d.total|floatformat:2 }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

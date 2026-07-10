@@ -1,0 +1,228 @@
+{% extends 'core/base.html' %}
+{% block titulo %}Orden {{ compra.numero_referencia }} — Inversiones Ramón{% endblock %}
+{% block topbar_titulo %}{{ compra.numero_referencia }} — {{ compra.proveedor.nombre }}{% endblock %}
+
+{% block topbar_acciones %}
+  {% if compra.estado == 'pendiente' and user.es_admin %}
+  <a href="{% url 'compras:aprobar_compra' compra.pk %}" class="btn btn-sm btn-warning fw-semibold">
+    <i class="bi bi-check-lg me-1"></i>Aprobar / Rechazar
+  </a>
+  {% endif %}
+  {% if compra.estado == 'aprobada' and user.es_admin %}
+  <a href="{% url 'compras:recibir_compra' compra.pk %}" class="btn btn-sm btn-primary">
+    <i class="bi bi-box-arrow-in-down me-1"></i>Registrar recepción
+  </a>
+  {% endif %}
+  {% if compra.estado == 'pendiente' %}
+  <a href="{% url 'compras:cancelar_compra' compra.pk %}" class="btn btn-sm btn-outline-danger">
+    <i class="bi bi-x-circle me-1"></i>Cancelar orden
+  </a>
+  {% endif %}
+{% endblock %}
+
+{% block contenido %}
+<div class="row g-3 animate__animated animate__fadeIn">
+
+  <div class="col-lg-4">
+    <div class="card mb-3 shadow-sm">
+      <div class="card-header fw-bold bg-light">Información de la orden</div>
+      <div class="card-body">
+        <div class="row g-2">
+          <div class="col-6">
+            <div class="text-muted small">Referencia</div>
+            <code class="fs-6 fw-bold">{{ compra.numero_referencia }}</code>
+          </div>
+          <div class="col-6">
+            <div class="text-muted small">Estado</div>
+            {% if compra.estado == 'pendiente' %}
+              <span class="badge bg-warning text-dark">Pendiente aprobación</span>
+            {% elif compra.estado == 'aprobada' %}
+              <span class="badge bg-success">Aprobada</span>
+              <div class="small text-muted mt-1" style="font-size: 0.75rem;"><i class="bi bi-truck text-success"></i> Mercancía en camino</div>
+            {% elif compra.estado == 'recibida' %}
+              <span class="badge bg-primary">Recibida</span>
+            {% elif compra.estado == 'rechazada' %}
+              <span class="badge bg-danger">Rechazada</span>
+            {% elif compra.estado == 'cancelada' %}
+              <span class="badge bg-secondary">Cancelada</span>
+            {% endif %}
+          </div>
+          <div class="col-12"><hr class="my-1 text-muted opacity-25"></div>
+          <div class="col-6">
+            <div class="text-muted small">Proveedor</div>
+            <strong>{{ compra.proveedor.nombre }}</strong>
+            {% if compra.proveedor.dia_visita %}
+            <div class="text-muted" style="font-size:.75rem">Visita: {{ compra.proveedor.get_dia_visita_display }}</div>
+            {% endif %}
+          </div>
+          <div class="col-6">
+            <div class="text-muted small">Creada por</div>
+            <span class="small text-dark fw-semibold">{{ compra.creada_por.get_nombre_completo|default:compra.creada_por.username }}</span>
+          </div>
+          <div class="col-6">
+            <div class="text-muted small">F. creación</div>
+            <span class="small text-secondary">{{ compra.fecha_creacion|date:"d/m/Y H:i" }}</span>
+          </div>
+          <div class="col-6">
+            <div class="text-muted small">F. estimada entrega</div>
+            <span class="small text-secondary">{{ compra.fecha_estimada|date:"d/m/Y"|default:"—" }}</span>
+          </div>
+          
+          {% if compra.fecha_aprobacion %}
+          <div class="col-12"><hr class="my-1 text-muted opacity-25"></div>
+          <div class="col-6">
+            <div class="text-muted small">Aprobada por</div>
+            <span class="small text-secondary">{{ compra.aprobada_por.get_nombre_completo|default:"—" }}</span>
+          </div>
+          <div class="col-6">
+            <div class="text-muted small">F. aprobación</div>
+            <span class="small text-secondary">{{ compra.fecha_aprobacion|date:"d/m/Y H:i" }}</span>
+          </div>
+          {% endif %}
+          
+          {% if compra.fecha_recepcion %}
+          <div class="col-12"><hr class="my-1 text-muted opacity-25"></div>
+          <div class="col-6">
+            <div class="text-muted small">F. recepción real</div>
+            <span class="small text-secondary">{{ compra.fecha_recepcion|date:"d/m/Y H:i" }}</span>
+          </div>
+          <div class="col-6">
+            <div class="text-muted small">Referencia doc.</div>
+            <code>{{ compra.referencia_documento|default:"—" }}</code>
+          </div>
+          {% endif %}
+          
+          {% if compra.observacion %}
+          <div class="col-12">
+            <div class="text-muted small mt-1">Observaciones de creación</div>
+            <div class="p-2 bg-light rounded small text-secondary">{{ compra.observacion }}</div>
+          </div>
+          {% endif %}
+          {% if compra.motivo_rechazo %}
+          <div class="col-12">
+            <div class="text-muted small mt-1">Motivo de rechazo</div>
+            <div class="p-2 bg-danger-subtle text-danger rounded small fw-semibold">
+              <i class="bi bi-exclamation-circle me-1"></i>{{ compra.motivo_rechazo }}
+            </div>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    {% if user.es_admin %}
+    <div class="card mb-3 shadow-sm border-start border-4 border-primary">
+      <div class="card-header fw-bold bg-light">Resumen Financiero (Admin)</div>
+      <div class="card-body">
+        <div class="row g-2">
+          <div class="col-6">
+            <div class="text-muted small">Modalidad de pago</div>
+            <strong>{{ compra.get_modalidad_pago_display|default:"No definida" }}</strong>
+          </div>
+          <div class="col-6">
+            <div class="text-muted small">Estado del pago</div>
+            {% if compra.pagado %}
+              <span class="badge bg-success"><i class="bi bi-cash-coin me-1"></i>Pagado</span>
+            {% else %}
+              <span class="badge bg-warning text-dark">Pendiente</span>
+            {% endif %}
+          </div>
+          {% if compra.modalidad_pago == 'credito' and not compra.pagado %}
+          <div class="col-12 my-1">
+            <div class="alert alert-info py-1 px-2 mb-0 small d-flex align-items-center justify-content-between">
+              <span><i class="bi bi-calendar-event me-1"></i>Vence: <strong>{{ compra.fecha_vencimiento|date:"d/m/Y" }}</strong></span>
+              {% if compra.cuenta_por_pagar %}
+              <a href="{% url 'core:detalle_cuenta_pagar' compra.cuenta_por_pagar.pk %}" class="btn btn-primary py-0 px-2 fw-semibold" style="font-size: 0.75rem;">
+                Ver cuenta
+              </a>
+              {% endif %}
+            </div>
+          </div>
+          {% endif %}
+          <div class="col-12 pt-2 border-top">
+            <div class="text-muted small">Monto Contractual / Total General</div>
+            <strong class="fs-4 text-primary">Bs. {{ compra.total|floatformat:2 }}</strong>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+  <div class="col-lg-8">
+    <div class="card shadow-sm">
+      <div class="card-header fw-bold bg-light">Productos de la orden</div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+              <tr>
+                <th>Producto</th>
+                <th class="text-center" style="width: 100px;">Pedido</th>
+                <th class="text-center" style="width: 100px;">Recibido</th>
+                {% if user.es_admin %}
+                <th class="text-end" style="width: 130px;">Precio unit.</th>
+                <th class="text-end" style="width: 130px;">Subtotal</th>
+                {% endif %}
+                <th class="text-center" style="width: 140px;">Estado</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for d in detalles %}
+              <tr>
+                <td>
+                  <span class="fw-semibold text-dark">{{ d.producto.nombre }}</span>
+                  <div class="text-muted app-code" style="font-size:.75rem"><code>{{ d.producto.codigo }}</code></div>
+                </td>
+                <td class="text-center fw-bold text-secondary">{{ d.cantidad_pedida }}</td>
+                <td class="text-center">
+                  {% if compra.estado == 'recibida' %}
+                    {% if d.entrega_incompleta %}
+                    <span class="text-danger fw-bold fs-6">{{ d.cantidad_recibida }}</span>
+                    {% else %}
+                    <span class="text-success fw-bold fs-6">{{ d.cantidad_recibida }}</span>
+                    {% endif %}
+                  {% else %}
+                    <span class="text-muted">—</span>
+                  {% endif %}
+                </td>
+                {% if user.es_admin %}
+                <td class="text-end text-secondary">Bs. {{ d.precio_unitario|floatformat:2 }}</td>
+                <td class="text-end fw-semibold text-dark">Bs. {{ d.subtotal|floatformat:2 }}</td>
+                {% endif %}
+                <td class="text-center">
+                  {% if compra.estado == 'pendiente' %}
+                    <span class="badge bg-light text-secondary border">Esperando</span>
+                  {% elif compra.estado == 'aprobada' %}
+                    <span class="badge bg-info text-dark"><i class="bi bi-truck me-1"></i>En camino</span>
+                  {% elif compra.estado == 'recibida' %}
+                    {% if d.entrega_incompleta %}
+                    <span class="badge bg-warning text-dark">Faltaron {{ d.diferencia }}</span>
+                    {% else %}
+                    <span class="badge bg-success-subtle text-success border border-success-subtle">Completo</span>
+                    {% endif %}
+                  {% else %}
+                    <span class="badge bg-light text-muted">Cancelada</span>
+                  {% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+            
+            {% if user.es_admin %}
+            <tfoot class="table-light fw-bold border-top-2">
+              <tr>
+                <td colspan="4" class="text-end text-dark fs-6">Total estimado de la orden:</td>
+                <td class="text-end text-primary fs-5">Bs. {{ compra.total|floatformat:2 }}</td>
+                <td></td>
+              </tr>
+            </tfoot>
+            {% endif %}
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

@@ -1,0 +1,148 @@
+{% extends 'core/base.html' %}
+{% block titulo %}Órdenes de Compra — Inversiones Ramón{% endblock %}
+{% block topbar_titulo %}Órdenes de compra{% endblock %}
+
+{% block topbar_acciones %}
+<a href="?{% if filter_params %}{{ filter_params }}&{% endif %}export=csv"
+   class="btn btn-sm btn-outline-success">
+  <i class="bi bi-file-earmark-spreadsheet me-1"></i>Exportar CSV
+</a>
+<a href="{% url 'compras:crear_compra' %}" class="btn btn-sm btn-primary">
+  <i class="bi bi-plus-lg me-1"></i>Nueva orden
+</a>
+{% endblock %}
+
+{% block contenido %}
+
+<div class="mb-3 d-flex gap-2 flex-wrap">
+  {% for val, label in estados %}
+  <a href="?estado={{ val }}{% if q %}&q={{ q }}{% endif %}" class="btn btn-sm
+    {% if estado == val %}
+      {% if val == 'pendiente' %}btn-warning text-dark
+      {% elif val == 'aprobada' %}btn-success
+      {% elif val == 'recibida' %}btn-primary
+      {% elif val == 'rechazada' %}btn-danger
+      {% elif val == 'cancelada' %}btn-secondary
+      {% else %}btn-dark{% endif %}
+    {% else %}btn-outline-secondary{% endif %} fw-semibold">
+    {{ label }}
+    {% if val == 'pendiente' and pendientes > 0 %}
+      <span class="badge bg-danger ms-1 shadow-sm">{{ pendientes }}</span>
+    {% endif %}
+  </a>
+  {% endfor %}
+</div>
+
+<div class="card mb-3 shadow-sm">
+  <div class="card-body py-2">
+    <form method="get" class="d-flex gap-2">
+      <input type="hidden" name="estado" value="{{ estado }}">
+      <div class="input-group input-group-sm">
+        <span class="input-group-text bg-light text-muted"><i class="bi bi-search"></i></span>
+        <input type="text" name="q" value="{{ q }}" class="form-control"
+               placeholder="Buscar por número de referencia interna o nombre del proveedor...">
+      </div>
+      <button type="submit" class="btn btn-sm btn-secondary px-3">Buscar</button>
+      {% if q %}
+        <a href="?estado={{ estado }}" class="btn btn-sm btn-outline-danger">Limpiar</a>
+      {% endif %}
+    </form>
+  </div>
+</div>
+
+<div class="card shadow-sm">
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th style="width: 110px;">Referencia</th>
+            <th>Proveedor</th>
+            {% if user.es_admin %}
+              <th>Creada por</th>
+            {% endif %}
+            <th style="width: 120px;">F. creación</th>
+            <th style="width: 120px;">F. estimada</th>
+            {% if user.es_admin %}
+              <th class="text-end" style="width: 130px;">Total (Bs.)</th>
+            {% endif %}
+            <th style="width: 150px;">Condición Pago</th>
+            <th style="width: 130px;">Estado</th>
+            <th class="text-center" style="width: 100px;">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for c in compras %}
+          <tr>
+            <td><code class="fw-bold">{{ c.numero_referencia }}</code></td>
+            <td><span class="fw-semibold text-dark">{{ c.proveedor.nombre }}</span></td>
+            {% if user.es_admin %}
+              <td><span class="small text-secondary">{{ c.creada_por.get_nombre_completo|default:c.creada_por.username }}</span></td>
+            {% endif %}
+            <td>{{ c.fecha_creacion|date:"d/m/Y" }}</td>
+            <td>{{ c.fecha_estimada|date:"d/m/Y"|default:"<span class='text-muted'>—</span>" }}</td>
+            
+            {% if user.es_admin %}
+            <td class="text-end fw-semibold">
+              <span class="text-primary">Bs. {{ c.total|floatformat:2 }}</span>
+            </td>
+            {% endif %}
+            
+            <td>
+              {% if c.estado == 'recibida' %}
+                {% if c.modalidad_pago == 'credito' %}
+                  {% if c.pagado %}
+                    <span class="badge bg-success-subtle text-success border border-success-subtle">Crédito saldado</span>
+                  {% else %}
+                    <span class="badge bg-warning-subtle text-warning border border-warning-subtle">Crédito pendiente</span>
+                  {% endif %}
+                {% elif c.modalidad_pago == 'contado' %}
+                  <span class="badge bg-success">Contado</span>
+                {% endif %}
+              {% else %}
+                <span class="text-muted small">—</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if c.estado == 'pendiente' %}<span class="badge bg-warning text-dark">Pendiente</span>
+              {% elif c.estado == 'aprobada' %}<span class="badge bg-success">Aprobada</span>
+              {% elif c.estado == 'recibida' %}<span class="badge bg-primary">Recibida</span>
+              {% elif c.estado == 'rechazada' %}<span class="badge bg-danger">Rechazada</span>
+              {% elif c.estado == 'cancelada' %}<span class="badge bg-secondary">Cancelada</span>
+              {% endif %}
+            </td>
+            <td class="text-center">
+              <div class="btn-group btn-group-sm" role="group">
+                <a href="{% url 'compras:detalle_compra' c.pk %}"
+                   class="btn btn-outline-secondary" title="Ver detalle de la orden">
+                  <i class="bi bi-eye"></i>
+                </a>
+                {% if c.estado == 'pendiente' and user.es_admin %}
+                <a href="{% url 'compras:aprobar_compra' c.pk %}"
+                   class="btn btn-warning" title="Aprobar o Rechazar orden">
+                  <i class="bi bi-check-lg"></i>
+                </a>
+                {% endif %}
+              </div>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="100%" class="text-center text-muted py-5">
+              <i class="bi bi-cart3 fs-1 d-block mb-2 text-secondary opacity-50"></i>
+              <p class="mb-1">No se encontraron órdenes de compra para los criterios seleccionados.</p>
+              <a href="{% url 'compras:crear_compra' %}" class="btn btn-primary btn-sm mt-2">
+                <i class="bi bi-plus-lg me-1"></i>Crear primera orden
+              </a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="card-body pt-0">
+    {% include 'core/_paginacion.html' %}
+  </div>
+</div>
+{% endblock %}

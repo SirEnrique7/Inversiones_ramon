@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Factura {{ venta.numero_factura }}</title>
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { font-family:'Segoe UI', Arial, sans-serif; font-size:13px; color:#111; padding:2rem; max-width:800px; margin:0 auto; }
+
+    .header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:1.5rem; padding-bottom:1rem; border-bottom:2px solid #1a56db; }
+    .empresa-nombre { font-size:1.4rem; font-weight:700; color:#1a56db; }
+    .empresa-info   { font-size:.8rem; color:#6b7280; margin-top:.25rem; }
+    .factura-titulo { text-align:right; }
+    .factura-num    { font-size:1.2rem; font-weight:700; }
+    .factura-fecha  { font-size:.8rem; color:#6b7280; }
+
+    .seccion { margin-bottom:1rem; }
+    .seccion-titulo { font-size:.7rem; font-weight:700; text-transform:uppercase; letter-spacing:.08em; color:#6b7280; margin-bottom:.3rem; }
+
+    /* CORRECCIÓN CSS: Cambiado a Flexbox para garantizar compatibilidad con motores de impresión */
+    .datos-flex { display:flex; justify-content:space-between; gap:1.5rem; }
+    .datos-col { flex: 1; }
+    .dato-label { font-size:.75rem; color:#6b7280; }
+    .dato-valor { font-weight:600; }
+
+    table { width:100%; border-collapse:collapse; margin:1rem 0; }
+    thead th { background:#f4f6fb; padding:.5rem .75rem; text-align:left; font-size:.75rem; text-transform:uppercase; letter-spacing:.05em; color:#6b7280; border-bottom:1px solid #e5e7eb; }
+    tbody td { padding:.5rem .75rem; border-bottom:1px solid #f3f4f6; }
+    tfoot td { padding:.5rem .75rem; font-weight:600; }
+    .text-right { text-align:right; }
+
+    .totales { width:280px; margin-left:auto; }
+    .totales tr td { padding:.3rem 0; }
+    .totales tr:last-child td { border-top:2px solid #e5e7eb; padding-top:.5rem; font-size:1.1rem; font-weight:700; color:#1a56db; }
+
+    .footer { margin-top:2rem; padding-top:1rem; border-top:1px solid #e5e7eb; text-align:center; font-size:.75rem; color:#9ca3af; }
+
+    .badge-estado { display:inline-block; padding:.2rem .6rem; border-radius:4px; font-size:.7rem; font-weight:700; }
+    .badge-procesada { background:#d1fae5; color:#065f46; }
+    .badge-credito   { background:#fef3c7; color:#92400e; }
+    .badge-pagada    { background:#dbeafe; color:#1e40af; }
+
+    @media print {
+      body { padding:.5rem; }
+      .no-print { display:none; }
+      @page { margin:.5cm; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="no-print" style="margin-bottom:1rem; display:flex; gap:.5rem">
+  <button onclick="window.print()"
+          style="background:#1a56db;color:#fff;border:none;padding:.5rem 1rem;border-radius:6px;cursor:pointer;font-size:.875rem">
+    <span>🖨️ Imprimir Factura</span>
+  </button>
+  <a href="{% url 'ventas:lista_ventas' %}"
+     style="background:#f3f4f6;color:#111;border:none;padding:.5rem 1rem;border-radius:6px;cursor:pointer;font-size:.875rem;text-decoration:none">
+    ← Volver al listado
+  </a>
+</div>
+
+<div class="header">
+  <div>
+    <div class="empresa-nombre">Inversiones Ramón</div>
+    <div class="empresa-info">
+      Caicara de Maturín, estado Monagas, Venezuela<br>
+      Sistema de gestión interno
+    </div>
+  </div>
+  <div class="factura-titulo">
+    <div class="factura-num">Factura: <code>{{ venta.numero_factura }}</code></div>
+    <div class="factura-fecha">{{ venta.fecha|date:"d/m/Y" }} — {{ venta.hora|time:"H:i" }}</div>
+    <div style="margin-top:.3rem">
+      {% if venta.estado == 'procesada' %}<span class="badge-estado badge-procesada">PROCESADA</span>
+      {% elif venta.estado == 'a_credito' %}<span class="badge-estado badge-credito">A CRÉDITO</span>
+      {% elif venta.estado == 'pagada' %}<span class="badge-estado badge-pagada">PAGADA</span>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<div class="datos-flex seccion">
+  <div class="datos-col">
+    <div class="seccion-titulo">Datos del cliente</div>
+    {% if venta.cliente %}
+      <div class="dato-valor">{{ venta.cliente.get_nombre_completo }}</div>
+      <div class="dato-label">C.I. / RIF: {{ venta.cliente.cedula_rif }}</div>
+      <div class="dato-label">Telf: {{ venta.cliente.telefono|default:"—" }}</div>
+    {% else %}
+      <div class="dato-valor">Consumidor Final</div>
+      <div class="text-muted small">Venta directa en mostrador</div>
+    {% endif %}
+  </div>
+  <div class="datos-col">
+    <div class="seccion-titulo">Datos de pago</div>
+    <div class="dato-valor">{{ venta.get_metodo_pago_display }}</div>
+    {% if venta.referencia_pago %}
+    <div class="dato-label">Ref. Operación: <strong>{{ venta.referencia_pago }}</strong></div>
+    {% endif %}
+    {% if venta.fecha_estimada_pago %}
+    <div class="dato-label">Plazo de pago: {{ venta.fecha_estimada_pago|date:"d/m/Y" }}</div>
+    {% endif %}
+    <div class="dato-label" style="margin-top: 0.25rem;">Atendido por: {{ venta.empleado.get_nombre_completo|default:"Sistema" }}</div>
+  </div>
+</div>
+
+<table>
+  <thead>
+    <tr>
+      <th>Código</th>
+      <th>Producto</th>
+      <th class="text-right">Cant.</th>
+      <th class="text-right">Precio unit. (Bs.)</th>
+      <th class="text-right">Subtotal (Bs.)</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for d in venta.detalles.all %}
+    <tr>
+      <td><code>{{ d.producto.codigo }}</code></td>
+      <td>{{ d.producto.nombre }}</td>
+      <td class="text-right">{{ d.cantidad }}</td>
+      <td class="text-right">Bs. {{ d.precio_unitario|floatformat:2 }}</td>
+      <td class="text-right">Bs. {{ d.subtotal|floatformat:2 }}</td>
+    </tr>
+    {% empty %}
+    <tr>
+      <td colspan="5" class="text-center text-muted">No se cargaron productos en esta transacción.</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<table class="totales">
+  <tr>
+    <td class="text-right" style="color:#6b7280">Subtotal:</td>
+    <td class="text-right">Bs. {{ venta.subtotal_bs|floatformat:2 }}</td> 
+  </tr>
+  <tr>
+    <td class="text-right" style="color:#6b7280">IVA (16%):</td>
+    <td class="text-right">Bs. {{ venta.iva_bs|floatformat:2 }}</td>
+  </tr>
+  <tr>
+    <td class="text-right">TOTAL:</td>
+    <td class="text-right">Bs. {{ venta.total_bs|floatformat:2 }}</td>
+  </tr>
+  {% if venta.total_usd %}
+  <tr>
+    <td class="text-right" style="font-size:.75rem;color:#6b7280">USD equiv. (BCV):</td>
+    <td class="text-right" style="font-size:.75rem;color:#6b7280">$ {{ venta.total_usd|floatformat:2 }}</td>
+  </tr>
+  {% endif %}
+</table>
+
+<div class="footer">
+  Documento de Control Interno — Inversiones Ramón — {{ venta.numero_factura }}<br>
+  Generado el {{ venta.fecha|date:"d/m/Y" }} a las {{ venta.hora|time:"H:i" }}
+</div>
+
+</body>
+</html>

@@ -1,0 +1,386 @@
+{% extends 'core/base.html' %}
+{% block titulo %}Nueva orden de compra — Inversiones Ramón{% endblock %}
+{% block topbar_titulo %}Nueva orden de compra{% endblock %}
+
+{% block extra_css %}
+<style>
+  .formset-row {
+    background: #f9fafb; border: 1px solid #e2e8f0;
+    border-radius: 10px; padding: 1rem; margin-bottom: .6rem; position: relative;
+  }
+  .btn-remove-row { position: absolute; top: .5rem; right: .5rem; }
+  .sugerencia-card {
+    background: #eff6ff; border: 1px solid #bfdbfe;
+    border-radius: 10px; padding: .85rem 1rem; margin-top: 1rem;
+  }
+  .subtotal-display {
+    background: #f0fdf4; border: 1px solid #bbf7d0;
+    border-radius: 8px; padding: .45rem .75rem;
+    font-size: .875rem; font-weight: 700; color: #16a34a;
+    text-align: right; height: calc(1.5em + .75rem + 2px);
+    display: flex; align-items: center; justify-content: flex-end;
+  }
+  .stock-badge { font-size: .72rem; margin-top: .25rem; min-height: 1rem; }
+</style>
+{% endblock %}
+
+{% block contenido %}
+<form method="post" id="compra-form">
+{% csrf_token %}
+<div class="row g-3">
+
+  {# ── Col izquierda: datos de la orden ── #}
+  <div class="col-lg-4">
+    <div class="card">
+      <div class="card-header fw-semibold">Datos de la orden</div>
+      <div class="card-body">
+        <div class="mb-3">
+          <label class="form-label fw-semibold">{{ form.proveedor.label }}</label>
+          {{ form.proveedor }}
+          {% if form.proveedor.errors %}<div class="text-danger small mt-1">{{ form.proveedor.errors }}</div>{% endif %}
+        </div>
+        <div class="mb-3">
+          <label class="form-label fw-semibold">{{ form.fecha_estimada.label }}</label>
+          {{ form.fecha_estimada }}
+          {% if form.fecha_estimada.errors %}<div class="text-danger small mt-1">{{ form.fecha_estimada.errors }}</div>{% endif %}
+        </div>
+        <div class="mb-3">
+          <label class="form-label fw-semibold">{{ form.observacion.label }}</label>
+          {{ form.observacion }}
+          {% if form.observacion.errors %}<div class="text-danger small mt-1">{{ form.observacion.errors }}</div>{% endif %}
+        </div>
+
+        {% if form.non_field_errors or formset.non_field_errors %}
+        <div class="alert alert-danger py-2 small mb-0">
+          {% for e in form.non_field_errors %}<div><i class="bi bi-exclamation-triangle-fill me-1"></i>{{ e }}</div>{% endfor %}
+          {% for e in formset.non_field_errors %}<div><i class="bi bi-exclamation-octagon-fill me-1"></i>{{ e }}</div>{% endfor %}
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    {% if sugerencias %}
+    <div class="sugerencia-card">
+      <div class="fw-semibold mb-2" style="font-size:.85rem">
+        <i class="bi bi-lightbulb me-1 text-warning"></i>Productos sugeridos (Stock bajo)
+      </div>
+      {% for p in sugerencias %}
+      <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+        <div>
+          <div style="font-size:.8rem;font-weight:600">{{ p.nombre }}</div>
+          <div class="text-muted" style="font-size:.72rem">
+            Stock: {{ p.stock_actual }} | Sugerido: <span class="fw-bold text-primary">{{ p.cantidad_sugerida_pedido }}</span>
+            {% if p.en_tendencia %}<span class="badge bg-warning text-dark ms-1">EN TENDENCIA</span>{% endif %}
+          </div>
+        </div>
+        <button type="button" class="btn btn-sm btn-outline-primary btn-agregar-sugerido"
+                data-id="{{ p.pk }}"
+                data-cantidad="{{ p.cantidad_sugerida_pedido }}"
+                data-precio="{{ p.precio_compra }}"
+                style="font-size:.72rem;padding:.2rem .5rem">
+          + Agregar
+        </button>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+  </div>
+
+  {# ── Col derecha: productos ── #}
+  <div class="col-lg-8">
+    <div class="card">
+      <div class="card-header d-flex justify-content-between align-items-center fw-semibold">
+        Productos solicitados
+        <button type="button" class="btn btn-sm btn-outline-primary" id="btn-agregar">
+          <i class="bi bi-plus-lg me-1"></i>Agregar producto
+        </button>
+      </div>
+      <div class="card-body">
+        {{ formset.management_form }}
+
+        {# Cabecera de columnas #}
+        <div class="row g-2 mb-1 px-1 d-none d-md-flex">
+          <div class="col-md-4"><small class="text-muted fw-semibold">Producto</small></div>
+          <div class="col-md-2"><small class="text-muted fw-semibold">Cant.</small></div>
+          <div class="col-md-3"><small class="text-muted fw-semibold">Precio unit. (Bs.)</small></div>
+          <div class="col-md-3 text-end"><small class="text-muted fw-semibold">Subtotal</small></div>
+        </div>
+
+        <div id="formset-container">
+          {% for f in formset %}
+          <div class="formset-row">
+            {{ f.id }}
+            {% if f.DELETE %}<div style="display:none" class="delete-checkbox-wrapper">{{ f.DELETE }}</div>{% endif %}
+            <button type="button" class="btn btn-sm btn-outline-danger btn-remove-row" onclick="eliminarFila(this)">
+              <i class="bi bi-trash"></i>
+            </button>
+            <div class="row g-2 align-items-end">
+              <div class="col-md-4">
+                <label class="form-label small fw-semibold d-md-none">Producto</label>
+                {{ f.producto }}
+                <div class="stock-badge text-muted"></div>
+                {% if f.producto.errors %}<div class="text-danger small mt-1">{{ f.producto.errors }}</div>{% endif %}
+              </div>
+              <div class="col-md-2">
+                <label class="form-label small fw-semibold d-md-none">Cantidad</label>
+                {{ f.cantidad_pedida }}
+                {% if f.cantidad_pedida.errors %}<div class="text-danger small mt-1">{{ f.cantidad_pedida.errors }}</div>{% endif %}
+              </div>
+              <div class="col-md-3">
+                <label class="form-label small fw-semibold d-md-none">Precio (Bs.)</label>
+                {{ f.precio_unitario }}
+                {% if f.precio_unitario.errors %}<div class="text-danger small mt-1">{{ f.precio_unitario.errors }}</div>{% endif %}
+              </div>
+              <div class="col-md-3">
+                <label class="form-label small fw-semibold d-md-none">Subtotal</label>
+                <div class="subtotal-display subtotal-val">Bs. 0.00</div>
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+
+        <div class="mt-3 pt-3 border-top d-flex justify-content-between align-items-center">
+          <small class="text-muted">* Precios referenciales. El administrador los confirma al recibir.</small>
+          <div class="text-end">
+            <div class="text-muted small">Total estimado</div>
+            <strong class="fs-5 text-primary" id="total-estimado">Bs. 0.00</strong>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="d-flex gap-2 mt-3 justify-content-end">
+      <a href="{% url 'compras:lista_compras' %}" class="btn btn-outline-secondary">Cancelar</a>
+      <button type="submit" class="btn btn-primary">
+        <i class="bi bi-send me-1"></i>Enviar para aprobación
+      </button>
+    </div>
+  </div>
+
+</div>
+</form>
+
+{# ── Plantilla HTML5 para nuevas filas ── #}
+<template id="fila-plantilla">
+  <div class="formset-row">
+    <button type="button" class="btn btn-sm btn-outline-danger btn-remove-row" onclick="eliminarFila(this)">
+      <i class="bi bi-trash"></i>
+    </button>
+    <div class="row g-2 align-items-end">
+      <div class="col-md-4">
+        <label class="form-label small fw-semibold d-md-none">Producto</label>
+        <select name="form-__prefix__-producto"
+                id="id_form-__prefix__-producto"
+                class="form-select producto-select">
+          {% for choice in formset.empty_form.producto.field.choices %}
+          <option value="{{ choice.0 }}">{{ choice.1 }}</option>
+          {% endfor %}
+        </select>
+        <div class="stock-badge text-muted" style="font-size:.72rem;min-height:1rem;margin-top:.25rem"></div>
+      </div>
+      <div class="col-md-2">
+        <label class="form-label small fw-semibold d-md-none">Cantidad</label>
+        <input type="number" name="form-__prefix__-cantidad_pedida"
+               id="id_form-__prefix__-cantidad_pedida"
+               class="form-control cant-field" min="1" value="1">
+      </div>
+      <div class="col-md-3">
+        <label class="form-label small fw-semibold d-md-none">Precio (Bs.)</label>
+        <input type="number" name="form-__prefix__-precio_unitario"
+               id="id_form-__prefix__-precio_unitario"
+               class="form-control precio-field" step="0.01" min="0" value="">
+      </div>
+      <div class="col-md-3">
+        <label class="form-label small fw-semibold d-md-none">Subtotal</label>
+        <div class="subtotal-display subtotal-val">Bs. 0.00</div>
+      </div>
+    </div>
+  </div>
+</template>
+{% endblock %}
+
+{% block extra_js %}
+<div id="django-data" data-api-url="{% url 'inventario:api_producto' %}"></div>
+
+<script>
+(function () {
+  'use strict';
+
+  const API_URL   = document.getElementById('django-data').dataset.apiUrl;
+  const tfEl      = document.getElementById('id_form-TOTAL_FORMS');
+
+  // ── Calcular subtotal de una fila ────────────────────
+  function calcularFila(row) {
+    var cant   = parseFloat(row.querySelector('.cant-field')?.value)   || 0;
+    var precio = parseFloat(row.querySelector('.precio-field')?.value) || 0;
+    var sub    = cant * precio;
+    var el     = row.querySelector('.subtotal-val');
+    if (el) el.textContent = 'Bs. ' + sub.toFixed(2);
+    return sub;
+  }
+
+  function calcularTotal() {
+    var total = 0;
+    document.querySelectorAll('#formset-container .formset-row').forEach(function (row) {
+      if (row.style.display === 'none') return;
+      total += calcularFila(row);
+    });
+    document.getElementById('total-estimado').textContent =
+      'Bs. ' + total.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  // ── Vincular eventos en una fila ────────────────────
+  function bindFila(row) {
+    var sel        = row.querySelector('.producto-select');
+    var priceField = row.querySelector('.precio-field');
+    var cantField  = row.querySelector('.cant-field');
+    var badge      = row.querySelector('.stock-badge');
+
+    if (!sel) return;
+
+    sel.addEventListener('change', function () {
+      var pid = sel.value;
+      if (!pid) {
+        if (badge) badge.textContent = '';
+        calcularFila(row);
+        calcularTotal();
+        return;
+      }
+      fetch(API_URL + '?producto=' + pid)
+        .then(function (r) { return r.json(); })
+        .then(function (d) {
+          if (badge) {
+            badge.textContent = 'Stock actual: ' + d.stock;
+            badge.style.color = '#64748b';
+          }
+          // Autocompletar precio de compra si está vacío o en cero
+          if (priceField) {
+            var pc = parseFloat(priceField.value) || 0;
+            if (pc === 0) priceField.value = d.precio_compra;
+          }
+          calcularFila(row);
+          calcularTotal();
+        })
+        .catch(function () {});
+    });
+
+    if (cantField)  cantField.addEventListener('input',  function () { calcularFila(row); calcularTotal(); });
+    if (priceField) priceField.addEventListener('input', function () { calcularFila(row); calcularTotal(); });
+  }
+
+  // ── Reindexar formset (mantiene Management Form consistente) ─
+  function reindexar() {
+    var filas = document.querySelectorAll('#formset-container .formset-row');
+    var idx = 0;
+    filas.forEach(function (fila) {
+      // Las filas ocultas (marcadas con DELETE) no deben reindexarse
+      if (fila.style.display === 'none') return;
+      fila.querySelectorAll('input, select, textarea').forEach(function (el) {
+        if (el.name) el.name = el.name.replace(/form-\d+-/, 'form-' + idx + '-');
+        if (el.id)   el.id   = el.id.replace(/id_form-\d+-/, 'id_form-' + idx + '-');
+      });
+      idx++;
+    });
+    tfEl.value = idx;
+  }
+
+  // ── Agregar fila desde <template> ───────────────────
+  function clonarFila(datos) {
+    var tpl       = document.getElementById('fila-plantilla');
+    var container = document.getElementById('formset-container');
+    var count     = parseInt(tfEl.value);
+
+    var div = document.createElement('div');
+    div.innerHTML = tpl.innerHTML.replace(/__prefix__/g, count);
+    var nuevaFila = div.firstElementChild;
+
+    if (datos) {
+      var sel   = nuevaFila.querySelector('.producto-select');
+      var cant  = nuevaFila.querySelector('.cant-field');
+      var prec  = nuevaFila.querySelector('.precio-field');
+      if (sel  && datos.producto_id) sel.value   = datos.producto_id;
+      if (cant && datos.cantidad)    cant.value   = datos.cantidad;
+      if (prec && datos.precio)      prec.value   = datos.precio;
+    }
+
+    container.appendChild(nuevaFila);
+    bindFila(nuevaFila);
+    reindexar();
+    calcularTotal();
+    nuevaFila.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  // ── Eliminar fila ────────────────────────────────────
+  function eliminarFila(btn) {
+    var fila     = btn.closest('.formset-row');
+    var visibles = document.querySelectorAll(
+      '#formset-container .formset-row:not([style*="display: none"]):not([style*="display:none"])'
+    );
+
+    if (visibles.length <= 1) {
+      var selF  = fila.querySelector('.producto-select');
+      var cantF = fila.querySelector('.cant-field');
+      var precF = fila.querySelector('.precio-field');
+      var badge = fila.querySelector('.stock-badge');
+      if (selF)  selF.selectedIndex = 0;
+      if (cantF) cantF.value = '1';
+      if (precF) precF.value = '';
+      if (badge) badge.textContent = '';
+      fila.querySelector('.subtotal-val').textContent = 'Bs. 0.00';
+      calcularTotal();
+      return;
+    }
+
+    var del = fila.querySelector('input[type="checkbox"][name$="-DELETE"]');
+    if (del) {
+      del.checked = true;
+      fila.style.display = 'none';
+      fila.querySelectorAll('input:not([type="checkbox"]), select').forEach(function (el) {
+        el.removeAttribute('required');
+        el.disabled = true;
+      });
+    } else {
+      fila.remove();
+    }
+    reindexar();
+    calcularTotal();
+  }
+
+  window.eliminarFila = eliminarFila;
+
+  // ── Botones de sugerencias ───────────────────────────
+  document.querySelectorAll('.btn-agregar-sugerido').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      clonarFila({
+        producto_id: btn.dataset.id,
+        cantidad:    btn.dataset.cantidad,
+        precio:      btn.dataset.precio,
+      });
+      btn.textContent = '✓ Agregado';
+      btn.className   = 'btn btn-sm btn-success';
+      btn.disabled    = true;
+    });
+  });
+
+  // ── Inicialización ───────────────────────────────────
+  document.getElementById('btn-agregar').addEventListener('click', function () { clonarFila(); });
+
+  // Vincular filas existentes (renderizadas por Django)
+  document.querySelectorAll('#formset-container .formset-row').forEach(function (row) {
+    bindFila(row);
+    var sel = row.querySelector('.producto-select');
+    if (sel && sel.value) sel.dispatchEvent(new Event('change'));
+  });
+
+  // Si no hay filas, agregar una
+  if (document.querySelectorAll('#formset-container .formset-row').length === 0) {
+    clonarFila();
+  }
+
+  reindexar();
+  calcularTotal();
+
+}());
+</script>
+{% endblock %}

@@ -1,0 +1,134 @@
+{% extends 'core/base.html' %}
+{% block titulo %}Motor de Tendencias{% endblock %}
+{% block topbar_titulo %}Motor de Tendencias — Velocidad de Venta{% endblock %}
+
+{% block contenido %}
+
+<!-- Explicación del algoritmo -->
+<div class="alert alert-info d-flex gap-2 mb-4" style="font-size:.85rem">
+  <i class="bi bi-info-circle-fill flex-shrink-0 mt-1"></i>
+  <div>
+    <strong>Cómo funciona:</strong> El sistema compara las ventas de los últimos <strong>7 días (RC)</strong>
+    contra el promedio semanal de los <strong>21 días anteriores (RL)</strong>.
+    Si RC supera el promedio histórico en más del <strong>20%</strong>,
+    el producto se marca como <span class="badge bg-warning text-dark">EN TENDENCIA</span>.
+    Se analizaron <strong>{{ total_analizado }} productos</strong>.
+  </div>
+</div>
+
+<!-- Stats -->
+<div class="row g-3 mb-4">
+  <div class="col-sm-4">
+    <div class="stat-card">
+      <div class="stat-icon naranja"><i class="bi bi-graph-up-arrow"></i></div>
+      <div>
+        <div class="stat-num">{{ en_tendencia|length }}</div>
+        <div class="stat-label">En tendencia</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-4">
+    <div class="stat-card">
+      <div class="stat-icon azul"><i class="bi bi-bar-chart"></i></div>
+      <div>
+        <div class="stat-num">{{ sin_tendencia|length }}</div>
+        <div class="stat-label">Con ventas normales</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-4">
+    <div class="stat-card">
+      <div class="stat-icon verde"><i class="bi bi-box-seam"></i></div>
+      <div>
+        <div class="stat-num">{{ total_analizado }}</div>
+        <div class="stat-label">Productos analizados</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Tabla EN TENDENCIA -->
+{% if en_tendencia %}
+<div class="card mb-4">
+  <div class="card-header d-flex align-items-center gap-2">
+    <span class="badge bg-warning text-dark">EN TENDENCIA</span>
+    Productos con aceleración de demanda
+  </div>
+  <div class="card-body p-0">
+    <table class="table table-hover mb-0">
+      <thead>
+        <tr>
+          <th>Producto</th>
+          <th>Categoría</th>
+          <th class="text-center">Vendido (7d)</th>
+          <th class="text-center">Prom. sem. hist.</th>
+          <th class="text-center">Umbral (×1.20)</th>
+          <th class="text-center">Stock actual</th>
+          <th class="text-center">Sugerido (2 sem.)</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in en_tendencia %}
+        <tr>
+          <td>
+            <strong>{{ r.producto.nombre }}</strong>
+            <div class="text-muted" style="font-size:.75rem"><code>{{ r.producto.codigo }}</code></div>
+          </td>
+          <td>{{ r.producto.categoria.nombre|default:"—" }}</td>
+          <td class="text-center"><strong class="text-warning">{{ r.vol_rc }}</strong></td>
+          <td class="text-center">{{ r.promedio_semanal_rl }}</td>
+          <td class="text-center text-muted">{{ r.umbral }}</td>
+          <td class="text-center">
+            {% if r.producto.stock_bajo %}
+            <span class="badge bg-danger">{{ r.producto.stock_actual }}</span>
+            {% else %}
+            <span class="badge bg-success">{{ r.producto.stock_actual }}</span>
+            {% endif %}
+          </td>
+          <td class="text-center"><strong>{{ r.cantidad_sugerida_2sem }}</strong> unid.</td>
+          <td>
+            <a href="{% url 'compras:crear_compra' %}?proveedor={{ r.producto.proveedor_id }}"
+               class="btn btn-sm btn-primary">Crear orden</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+<!-- Tabla todos los productos con movimiento -->
+{% if sin_tendencia %}
+<div class="card">
+  <div class="card-header">Productos con ventas normales (últimos 7 días)</div>
+  <div class="card-body p-0">
+    <table class="table table-hover mb-0">
+      <thead>
+        <tr>
+          <th>Producto</th>
+          <th class="text-center">Vendido (7d)</th>
+          <th class="text-center">Prom. sem. hist.</th>
+          <th class="text-center">Stock actual</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in sin_tendencia %}
+        <tr>
+          <td>
+            {{ r.producto.nombre }}
+            <div class="text-muted" style="font-size:.75rem"><code>{{ r.producto.codigo }}</code></div>
+          </td>
+          <td class="text-center">{{ r.vol_rc }}</td>
+          <td class="text-center text-muted">{{ r.promedio_semanal_rl }}</td>
+          <td class="text-center">{{ r.producto.stock_actual }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+{% endblock %}

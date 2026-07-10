@@ -1,0 +1,170 @@
+{% extends 'core/base.html' %}
+{% block titulo %}{{ venta.numero_factura }}{% endblock %}
+{% block topbar_titulo %}{{ venta.numero_factura }}{% endblock %}
+
+{% block topbar_acciones %}
+<a href="{% url 'ventas:ver_factura' venta.pk %}"
+   class="btn btn-sm btn-outline-primary" target="_blank">
+  <i class="bi bi-printer me-1"></i>Ver / Imprimir factura
+</a>
+{% if user.es_admin and venta.estado != 'cancelada' %}
+<a href="{% url 'ventas:cancelar_venta' venta.pk %}"
+   class="btn btn-sm btn-outline-danger">Cancelar venta</a>
+{% endif %}
+{% if cuenta and user.es_admin %}
+<a href="{% url 'core:detalle_cuenta_cobrar' cuenta.pk %}"
+   class="btn btn-sm btn-warning">
+  <i class="bi bi-cash me-1"></i>Registrar pago
+</a>
+{% endif %}
+{% endblock %}
+
+{% block contenido %}
+<div class="row g-3">
+
+  <div class="col-lg-4">
+    <div class="card mb-3">
+      <div class="card-header">Información de la venta</div>
+      <div class="card-body">
+        <div class="row g-2">
+          <div class="col-6">
+            <div class="text-muted small">Factura</div>
+            <code class="fs-6">{{ venta.numero_factura }}</code>
+          </div>
+          <div class="col-6">
+            <div class="text-muted small">Estado</div>
+            {% if venta.estado == 'procesada' %}<span class="badge bg-success">Procesada</span>
+            {% elif venta.estado == 'a_credito' %}<span class="badge bg-warning text-dark">A crédito</span>
+            {% elif venta.estado == 'pagada' %}<span class="badge bg-primary">Pagada</span>
+            {% elif venta.estado == 'cancelada' %}<span class="badge bg-secondary">Cancelada</span>
+            {% endif %}
+          </div>
+          <div class="col-6">
+            <div class="text-muted small">Fecha</div>
+            {{ venta.fecha|date:"d/m/Y" }} {{ venta.hora|time:"H:i" }}
+          </div>
+          <div class="col-6">
+            <div class="text-muted small">Empleado</div>
+            {{ venta.empleado.get_nombre_completo|default:"—" }}
+          </div>
+          <div class="col-12 border-top pt-2 mt-2">
+            <div class="text-muted small">Cliente</div>
+            <strong>{{ venta.cliente.get_nombre_completo|default:"Consumidor final" }}</strong>
+            {% if venta.cliente %}
+              <div class="text-muted small">C.I. / RIF: {{ venta.cliente.cedula_rif }}</div>
+            {% endif %}
+          </div>
+          
+          {% if user.es_admin %}
+          <div class="col-6 border-top pt-2 mt-2">
+            <div class="text-muted small">Método de pago</div>
+            {{ venta.get_metodo_pago_display }}
+          </div>
+          {% if venta.referencia_pago %}
+          <div class="col-6 border-top pt-2 mt-2">
+            <div class="text-muted small">Referencia</div>
+            <code>{{ venta.referencia_pago }}</code>
+          </div>
+          {% endif %}
+          {% if venta.fecha_estimada_pago %}
+          <div class="col-12 mt-2">
+            <div class="text-muted small">F. estimada de pago</div>
+            <span class="text-warning fw-bold">{{ venta.fecha_estimada_pago|date:"d/m/Y" }}</span>
+          </div>
+          {% endif %}
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    {% if user.es_admin %}
+    <div class="card">
+      <div class="card-header">Resumen financiero</div>
+      <div class="card-body">
+        <div class="d-flex justify-content-between mb-1">
+          <span class="text-muted">Subtotal</span>
+          <span>Bs. {{ venta.subtotal_bs|floatformat:2 }}</span>
+        </div>
+        <div class="d-flex justify-content-between mb-1">
+          <span class="text-muted">IVA (16%)</span>
+          <span>Bs. {{ venta.iva_bs|floatformat:2 }}</span>
+        </div>
+        <div class="d-flex justify-content-between fw-bold border-top pt-2 mt-1">
+          <span>Total</span>
+          <span class="fs-5">Bs. {{ venta.total_bs|floatformat:2 }}</span>
+        </div>
+        {% if venta.total_usd %}
+        <div class="d-flex justify-content-between text-muted mt-1" style="font-size:.8rem">
+          <span>USD (tasa {{ venta.tasa_bcv_momento }})</span>
+          <span>$ {{ venta.total_usd|floatformat:2 }}</span>
+        </div>
+        {% endif %}
+        {% if cuenta %}
+        <div class="mt-3 pt-2 border-top">
+          <div class="text-muted small mb-1">Saldo por cobrar</div>
+          <span class="fs-5 fw-bold {% if cuenta.vencida %}text-danger{% else %}text-warning{% endif %}">
+            Bs. {{ cuenta.saldo_restante|floatformat:2 }}
+          </span>
+          {% if cuenta.vencida %}
+          <span class="badge bg-danger ms-1">Vencida</span>
+          {% endif %}
+        </div>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+  <div class="col-lg-8">
+    <div class="card">
+      <div class="card-header">Productos vendidos</div>
+      <div class="card-body p-0">
+        <table class="table table-hover mb-0">
+          <thead>
+            <tr>
+              <th>Producto</th>
+              <th class="text-center">Cantidad</th>
+              {% if user.es_admin %}
+              <th class="text-end">Precio unit.</th>
+              <th class="text-end">Subtotal</th>
+              {% endif %}
+            </tr>
+          </thead>
+          <tbody>
+            {% for d in venta.detalles.all %}
+            <tr>
+              <td>
+                <strong>{{ d.producto.nombre }}</strong>
+                <div class="text-muted" style="font-size:.75rem">
+                  <code>{{ d.producto.codigo }}</code>
+                </div>
+              </td>
+              <td class="text-center">{{ d.cantidad }}</td>
+              {% if user.es_admin %}
+              <td class="text-end">Bs. {{ d.precio_unitario|floatformat:2 }}</td>
+              <td class="text-end">Bs. {{ d.subtotal|floatformat:2 }}</td>
+              {% endif %}
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="{% if user.es_admin %}4{% else %}2{% endif %}" class="text-center text-muted py-4">
+                No hay productos registrados en esta venta.
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+          {% if user.es_admin %}
+          <tfoot>
+            <tr>
+              <td colspan="3" class="text-end fw-bold">Total:</td>
+              <td class="text-end fw-bold">Bs. {{ venta.total_bs|floatformat:2 }}</td>
+            </tr>
+          </tfoot>
+          {% endif %}
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

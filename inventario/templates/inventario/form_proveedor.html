@@ -1,0 +1,78 @@
+{% extends 'inventario/base.html' %}
+{% block titulo %}{{ titulo }}{% endblock %}
+{% block topbar_titulo %}{{ titulo }}{% endblock %}
+
+{% block contenido %}
+<div class="row justify-content-center">
+  <div class="col-lg-6">
+    <div class="card">
+      <div class="card-header">{{ titulo }}</div>
+      <div class="card-body">
+        <form method="post">{% csrf_token %}
+          
+          {% if form.non_field_errors %}
+          <div class="alert alert-danger py-2 small">
+            {% for error in form.non_field_errors %}
+              <i class="bi bi-exclamation-circle me-1"></i> {{ error }}
+            {% endfor %}
+          </div>
+          {% endif %}
+
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">{{ form.nombre.label }}</label>
+              {{ form.nombre }}
+              {% if form.nombre.errors %}<div class="text-danger small mt-1">{{ form.nombre.errors }}</div>{% endif %}
+            </div>
+            
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">{{ form.rif.label }}</label>
+              {{ form.rif }}
+              {% if form.rif.errors %}<div class="text-danger small mt-1">{{ form.rif.errors }}</div>{% endif %}
+            </div>
+            
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">{{ form.empresa.label }}</label>
+              {{ form.empresa }}
+              {% if form.empresa.errors %}<div class="text-danger small mt-1">{{ form.empresa.errors }}</div>{% endif %}
+            </div>
+            
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">{{ form.telefono.label }}</label>
+              {{ form.telefono }}
+              {% if form.telefono.errors %}<div class="text-danger small mt-1">{{ form.telefono.errors }}</div>{% endif %}
+            </div>
+            
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">{{ form.dia_visita.label }}</label>
+              {{ form.dia_visita }}
+              {% if form.dia_visita.errors %}<div class="text-danger small mt-1">{{ form.dia_visita.errors }}</div>{% endif %}
+            </div>
+            
+            <div class="col-12">
+              <label class="form-label fw-semibold">{{ form.direccion.label }}</label>
+              {{ form.direccion }}
+              {% if form.direccion.errors %}<div class="text-danger small mt-1">{{ form.direccion.errors }}</div>{% endif %}
+            </div>
+
+            <div class="col-12">
+              <div class="form-check">
+                {{ form.activo }}
+                <label class="form-check-label fw-semibold" for="{{ form.activo.id_for_label }}">
+                  {{ form.activo.label }}
+                </label>
+              </div>
+              {% if form.activo.errors %}<div class="text-danger small mt-1">{{ form.activo.errors }}</div>{% endif %}
+            </div>
+          </div>
+
+          <div class="d-flex gap-2 mt-4">
+            <button type="submit" class="btn btn-primary">Guardar</button>
+            <a href="{% url 'inventario:lista_proveedores' %}" class="btn btn-outline-secondary">Cancelar</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,108 @@
+{% extends 'core/base.html' %}
+{% block titulo %}Reportes{% endblock %}
+{% block topbar_titulo %}Reportes e inteligencia de negocios{% endblock %}
+
+{% block contenido %}
+<div class="row g-3">
+
+  <div class="col-md-4">
+    <a href="{% url 'reportes:tendencias' %}" class="text-decoration-none">
+      <div class="card h-100 card-hover">
+        <div class="card-body d-flex gap-3 align-items-start">
+          <div class="stat-icon naranja flex-shrink-0"><i class="bi bi-graph-up-arrow"></i></div>
+          <div>
+            <div class="fw-bold mb-1">Motor de Tendencias</div>
+            <div class="text-muted small">Productos en alta demanda según velocidad de venta de los últimos 7 días.</div>
+          </div>
+        </div>
+      </div>
+    </a>
+  </div>
+
+  <div class="col-md-4">
+    <a href="{% url 'reportes:abastecimiento' %}" class="text-decoration-none">
+      <div class="card h-100 card-hover">
+        <div class="card-body d-flex gap-3 align-items-start">
+          <div class="stat-icon rojo flex-shrink-0"><i class="bi bi-truck"></i></div>
+          <div>
+            <div class="fw-bold mb-1">Abastecimiento Crítico</div>
+            <div class="text-muted small">Panel de reposición urgente con cantidades sugeridas para 2 semanas.</div>
+          </div>
+        </div>
+      </div>
+    </a>
+  </div>
+
+  <div class="col-md-4">
+    <a href="{% url 'reportes:ventas' %}" class="text-decoration-none">
+      <div class="card h-100 card-hover">
+        <div class="card-body d-flex gap-3 align-items-start">
+          <div class="stat-icon verde flex-shrink-0"><i class="bi bi-receipt"></i></div>
+          <div>
+            <div class="fw-bold mb-1">Reporte de Ventas</div>
+            <div class="text-muted small">Ventas por período, top productos y desglose por método de pago.</div>
+          </div>
+        </div>
+      </div>
+    </a>
+  </div>
+
+  <div class="col-md-4">
+    <a href="{% url 'reportes:compras' %}" class="text-decoration-none">
+      <div class="card h-100 card-hover">
+        <div class="card-body d-flex gap-3 align-items-start">
+          <div class="stat-icon azul flex-shrink-0"><i class="bi bi-cart3"></i></div>
+          <div>
+            <div class="fw-bold mb-1">Reporte de Compras</div>
+            <div class="text-muted small">Compras recibidas por período, proveedores y deudas pendientes.</div>
+          </div>
+        </div>
+      </div>
+    </a>
+  </div>
+
+  <div class="col-md-4">
+    <a href="{% url 'reportes:inventario' %}" class="text-decoration-none">
+      <div class="card h-100 card-hover">
+        <div class="card-body d-flex gap-3 align-items-start">
+          <div class="stat-icon morado flex-shrink-0"><i class="bi bi-box-seam"></i></div>
+          <div>
+            <div class="fw-bold mb-1">Estado del Inventario</div>
+            <div class="text-muted small">Valorización patrimonial, stock bajo y distribución por categoría.</div>
+          </div>
+        </div>
+      </div>
+    </a>
+  </div>
+
+  <div class="col-md-4">
+    <a href="{% url 'reportes:financiero' %}" class="text-decoration-none">
+      <div class="card h-100 card-hover">
+        <div class="card-body d-flex gap-3 align-items-start">
+          <div class="stat-icon rojo flex-shrink-0"><i class="bi bi-bank"></i></div>
+          <div>
+            <div class="fw-bold mb-1">Reporte Financiero</div>
+            <div class="text-muted small">Cuentas por cobrar y pagar, saldos activos y vencidos en Bs. y USD.</div>
+          </div>
+        </div>
+      </div>
+    </a>
+  </div>
+
+</div>
+
+{% if tasa %}
+<div class="mt-4 text-muted small text-center">
+  <i class="bi bi-currency-exchange me-1"></i>
+  Tasa BCV vigente: <strong>Bs. {{ tasa.tasa_bs_usd }}</strong> / USD —
+  Actualizada el {{ tasa.fecha|date:"d/m/Y" }}
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_css %}
+<style>
+  .card-hover { transition: box-shadow .15s, transform .15s; cursor: pointer; }
+  .card-hover:hover { box-shadow: 0 4px 16px rgba(26,86,219,.12); transform: translateY(-2px); }
+</style>
+{% endblock %}

@@ -1,0 +1,22 @@
+{% extends 'core/base.html' %}
+{% block titulo %}Reactivar usuario{% endblock %}
+{% block topbar_titulo %}Reactivar usuario{% endblock %}
+{% block contenido %}
+<div class="row justify-content-center">
+  <div class="col-lg-5">
+    <div class="card border-success">
+      <div class="card-header text-success"><i class="bi bi-person-check me-2"></i>Confirmar reactivación</div>
+      <div class="card-body">
+        <p>¿Deseas reactivar la cuenta de <strong>{{ usuario.get_nombre_completo }}</strong>?</p>
+        <p class="text-muted small">Cédula: {{ usuario.cedula }} | Rol: {{ usuario.get_rol_display }}</p>
+        <div class="alert alert-info">El usuario recuperará acceso al sistema inmediatamente.</div>
+        <form method="post" class="d-flex gap-2">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-success">Confirmar reactivación</button>
+          <a href="{% url 'core:lista_usuarios' %}" class="btn btn-outline-secondary">Cancelar</a>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

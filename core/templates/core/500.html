@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Error del servidor — Inversiones Ramón</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter', 'Segoe UI', sans-serif;
+      background: #f1f5f9;
+      display: flex; align-items: center; justify-content: center;
+      min-height: 100vh; color: #0f172a;
+    }
+    .card {
+      background: #fff; border-radius: 16px;
+      box-shadow: 0 4px 24px rgba(0,0,0,.08);
+      padding: 3rem 2.5rem; text-align: center;
+      max-width: 420px; width: 90%;
+    }
+    .code {
+      font-size: 5rem; font-weight: 700; line-height: 1;
+      color: #e11d48; letter-spacing: -.04em;
+    }
+    .title {
+      font-size: 1.25rem; font-weight: 600;
+      margin: .75rem 0 .5rem; color: #0f172a;
+    }
+    .desc {
+      font-size: .9rem; color: #64748b; line-height: 1.6;
+    }
+    .btn {
+      display: inline-block; margin-top: 1.75rem;
+      padding: .65rem 1.5rem; background: #1a56db;
+      color: #fff; border-radius: 8px; text-decoration: none;
+      font-size: .875rem; font-weight: 600;
+      transition: background .15s;
+    }
+    .btn:hover { background: #1344b8; }
+    .icon { font-size: 2.5rem; margin-bottom: .5rem; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="icon">⚠️</div>
+    <div class="code">500</div>
+    <div class="title">Error interno del servidor</div>
+    <p class="desc">
+      Algo salió mal de nuestro lado.<br>
+      El error fue registrado. Intenta de nuevo en unos momentos.
+    </p>
+    <a href="/" class="btn">← Volver al inicio</a>
+  </div>
+</body>
+</html>

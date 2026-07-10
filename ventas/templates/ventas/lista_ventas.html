@@ -1,0 +1,132 @@
+{% extends 'core/base.html' %}
+{% block titulo %}Ventas{% endblock %}
+{% block topbar_titulo %}Ventas{% endblock %}
+
+{% block topbar_acciones %}
+<a href="?{% if filter_params %}{{ filter_params }}&{% endif %}export=csv"
+   class="btn btn-sm btn-outline-success">
+  <i class="bi bi-file-earmark-spreadsheet me-1"></i>Exportar CSV
+</a>
+<a href="{% url 'ventas:crear_venta' %}" class="btn btn-sm btn-primary">
+  <i class="bi bi-plus-lg me-1"></i>Nueva venta
+</a>
+{% endblock %}
+
+{% block contenido %}
+
+{% if user.es_admin and totales %}
+<div class="row g-3 mb-4">
+  <div class="col-sm-6">
+    <div class="stat-card">
+      <div class="stat-icon verde"><i class="bi bi-cash-stack"></i></div>
+      <div>
+        <div class="stat-num">Bs {{ totales.total_bs|default:"0"|floatformat:2 }}</div>
+        <div class="stat-label">Ventas hoy (Bs.)</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-6">
+    <div class="stat-card">
+      <div class="stat-icon azul"><i class="bi bi-currency-dollar"></i></div>
+      <div>
+        <div class="stat-num">$ {{ totales.total_usd|default:"0"|floatformat:2 }}</div>
+        <div class="stat-label">Ventas hoy (USD)</div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<div class="card mb-3">
+  <div class="card-body py-2">
+    <form method="get" class="row g-2 align-items-center">
+      <div class="col-auto flex-grow-1">
+        <input type="text" name="q" value="{{ q }}" class="form-control form-control-sm"
+               placeholder="Buscar por factura, cliente o cédula...">
+      </div>
+      <div class="col-auto">
+        <input type="date" name="fecha" value="{{ fecha }}" class="form-control form-control-sm">
+      </div>
+      <div class="col-auto">
+        <select name="estado" class="form-select form-select-sm">
+          <option value="">Todos los estados</option>
+          <option value="procesada"  {% if estado == 'procesada' %}selected{% endif %}>Procesadas</option>
+          <option value="a_credito" {% if estado == 'a_credito' %}selected{% endif %}>A crédito</option>
+          <option value="pagada"    {% if estado == 'pagada' %}selected{% endif %}>Pagadas</option>
+          <option value="cancelada" {% if estado == 'cancelada' %}selected{% endif %}>Canceladas</option>
+        </select>
+      </div>
+      <div class="col-auto">
+        <button type="submit" class="btn btn-sm btn-outline-secondary">Filtrar</button>
+        <a href="{% url 'ventas:lista_ventas' %}" class="btn btn-sm btn-link">Limpiar</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-body p-0">
+    <table class="table table-hover mb-0">
+      <thead>
+        <tr>
+          <th>Factura</th>
+          <th>Fecha</th>
+          {% if user.es_admin %}<th>Empleado</th>{% endif %}
+          <th>Cliente</th>
+          <th>Método</th>
+          <th class="text-end">Total (Bs.)</th>
+          <th>Estado</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for v in ventas %}
+        <tr>
+          <td><code>{{ v.numero_factura }}</code></td>
+          <td>{{ v.fecha|date:"d/m/Y" }} <span class="text-muted small">{{ v.hora|time:"H:i" }}</span></td>
+          {% if user.es_admin %}<td>{{ v.empleado.get_nombre_completo|default:"—" }}</td>{% endif %}
+          <td>{{ v.cliente.get_nombre_completo|default:"—" }}</td>
+          <td>
+            <span class="badge
+              {% if v.metodo_pago == 'credito' %}bg-warning text-dark
+              {% elif v.metodo_pago == 'biopago' %}bg-info text-dark
+              {% else %}bg-light text-dark{% endif %}">
+              {{ v.get_metodo_pago_display }}
+            </span>
+          </td>
+          <td class="text-end fw-semibold">Bs. {{ v.total_bs|floatformat:2 }}</td>
+          <td>
+            {% if v.estado == 'procesada' %}<span class="badge bg-success">Procesada</span>
+            {% elif v.estado == 'a_credito' %}<span class="badge bg-warning text-dark">A crédito</span>
+            {% elif v.estado == 'pagada' %}<span class="badge bg-primary">Pagada</span>
+            {% elif v.estado == 'cancelada' %}<span class="badge bg-secondary">Cancelada</span>
+            {% endif %}
+          </td>
+          <td class="text-end">
+            <a href="{% url 'ventas:detalle_venta' v.pk %}"
+               class="btn btn-sm btn-outline-secondary"><i class="bi bi-eye"></i></a>
+            <a href="{% url 'ventas:ver_factura' v.pk %}"
+               class="btn btn-sm btn-outline-primary" title="Ver factura">
+              <i class="bi bi-receipt"></i>
+            </a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="{% if user.es_admin %}8{% else %}7{% endif %}" class="text-center text-muted py-5">
+            <i class="bi bi-receipt fs-1 d-block mb-2"></i>
+            No hay ventas registradas que coincidan con la búsqueda.
+            <a href="{% url 'ventas:crear_venta' %}" class="btn btn-primary btn-sm ms-2">
+              Registrar primera venta
+            </a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="card-body pt-0">
+    {% include 'core/_paginacion.html' %}
+  </div>
+</div>
+{% endblock %}

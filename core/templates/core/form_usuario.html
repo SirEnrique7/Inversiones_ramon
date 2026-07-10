@@ -1,0 +1,86 @@
+{% extends 'core/base.html' %}
+{% block titulo %}{{ titulo }}{% endblock %}
+{% block topbar_titulo %}{{ titulo }}{% endblock %}
+
+{% block contenido %}
+<div class="row justify-content-center">
+  <div class="col-lg-6">
+    <div class="card">
+      <div class="card-header">{{ titulo }}</div>
+      <div class="card-body">
+        <form method="post">
+          {% csrf_token %}
+          
+          {% if form.non_field_errors %}
+          <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+          {% endif %}
+          
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">{{ form.first_name.label }}</label>
+              {{ form.first_name }}
+              {% if form.first_name.errors %}<div class="text-danger small">{{ form.first_name.errors.as_text }}</div>{% endif %}
+            </div>
+            
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">{{ form.last_name.label }}</label>
+              {{ form.last_name }}
+              {% if form.last_name.errors %}<div class="text-danger small">{{ form.last_name.errors.as_text }}</div>{% endif %}
+            </div>
+            
+            {% if form.username %}
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">{{ form.username.label }}</label>
+              {{ form.username }}
+              {% if form.username.errors %}<div class="text-danger small">{{ form.username.errors.as_text }}</div>{% endif %}
+            </div>
+            {% endif %}
+
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">{{ form.cedula.label }}</label>
+              {{ form.cedula }}
+              {% if form.cedula.errors %}<div class="text-danger small">{{ form.cedula.errors.as_text }}</div>{% endif %}
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">{{ form.email.label }}</label>
+              {{ form.email }}
+              {% if form.email.errors %}<div class="text-danger small">{{ form.email.errors.as_text }}</div>{% endif %}
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">{{ form.telefono.label }}</label>
+              {{ form.telefono }}
+              {% if form.telefono.errors %}<div class="text-danger small">{{ form.telefono.errors.as_text }}</div>{% endif %}
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">{{ form.rol.label }}</label>
+              {{ form.rol }}
+              {% if form.rol.errors %}<div class="text-danger small">{{ form.rol.errors.as_text }}</div>{% endif %}
+            </div>
+            
+            {% if form.password1 %}
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">{{ form.password1.label }}</label>
+              {{ form.password1 }}
+              {% if form.password1.errors %}<div class="text-danger small">{{ form.password1.errors.as_text }}</div>{% endif %}
+            </div>
+            
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">{{ form.password2.label }}</label>
+              {{ form.password2 }}
+              {% if form.password2.errors %}<div class="text-danger small">{{ form.password2.errors.as_text }}</div>{% endif %}
+            </div>
+            {% endif %}
+          </div>
+          
+          <div class="d-flex gap-2 mt-4">
+            <button type="submit" class="btn btn-primary">{{ accion }}</button>
+            <a href="{% url 'core:lista_usuarios' %}" class="btn btn-outline-secondary">Cancelar</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

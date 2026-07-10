@@ -1,0 +1,44 @@
+{% extends 'core/base.html' %}
+{% block titulo %}Cancelar venta{% endblock %}
+{% block topbar_titulo %}Cancelar venta{% endblock %}
+
+{% block contenido %}
+<div class="row justify-content-center">
+  <div class="col-lg-5">
+    <div class="card border-danger shadow-sm">
+      <div class="card-header bg-danger text-white fw-bold">
+        <i class="bi bi-exclamation-octagon me-1"></i> Confirmar cancelación
+      </div>
+      <div class="card-body">
+        <p class="mb-3">¿Seguro que deseas cancelar la venta <strong>{{ venta.numero_factura }}</strong>?</p>
+        
+        <div class="alert alert-warning py-2 small">
+          <div class="d-flex align-items-start gap-1">
+            <i class="bi bi-exclamation-triangle-fill text-warning mt-0.5"></i>
+            <div>
+              <span class="fw-bold">Efectos en el sistema:</span>
+              <ul class="margin-bottom-0 ps-3 mt-1">
+                <li>El stock de todos los productos será repuesto automáticamente en el inventario.</li>
+                {% if venta.metodo_pago == 'credito' %}
+                <li>La cuenta por cobrar asociada a esta transacción será afectada/anulada.</li>
+                {% endif %}
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <form method="post" class="d-flex gap-2 justify-content-end mt-3">
+          {% csrf_token %}
+          <a href="{% url 'ventas:detalle_venta' venta.pk %}"
+             class="btn btn-sm btn-outline-secondary">
+            Volver al detalle
+          </a>
+          <button type="submit" class="btn btn-sm btn-danger">
+            Sí, cancelar venta
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

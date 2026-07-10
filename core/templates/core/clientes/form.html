@@ -1,0 +1,22 @@
+{% extends 'core/base.html' %}
+{% block titulo %}{{ titulo }}{% endblock %}
+{% block topbar_titulo %}{{ titulo }}{% endblock %}
+{% block contenido %}
+<div class="row justify-content-center"><div class="col-lg-5">
+  <div class="card"><div class="card-header">{{ titulo }}</div><div class="card-body">
+    <form method="post">{% csrf_token %}
+      <div class="row g-3">
+        <div class="col-12"><label class="form-label fw-semibold">{{ form.cedula_rif.label }}</label>{{ form.cedula_rif }}{% if form.cedula_rif.errors %}<div class="text-danger small">{{ form.cedula_rif.errors }}</div>{% endif %}</div>
+        <div class="col-md-6"><label class="form-label fw-semibold">{{ form.nombre.label }}</label>{{ form.nombre }}</div>
+        <div class="col-md-6"><label class="form-label fw-semibold">{{ form.apellido.label }}</label>{{ form.apellido }}</div>
+        <div class="col-md-6"><label class="form-label fw-semibold">{{ form.telefono.label }}</label>{{ form.telefono }}</div>
+        <div class="col-12"><label class="form-label fw-semibold">{{ form.direccion.label }}</label>{{ form.direccion }}</div>
+      </div>
+      <div class="d-flex gap-2 mt-4">
+        <button type="submit" class="btn btn-primary">Guardar</button>
+        <a href="{% url 'core:lista_clientes' %}" class="btn btn-outline-secondary">Cancelar</a>
+      </div>
+    </form>
+  </div></div>
+</div></div>
+{% endblock %}

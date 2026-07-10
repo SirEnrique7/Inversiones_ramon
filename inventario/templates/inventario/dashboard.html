@@ -1,0 +1,81 @@
+{% extends 'inventario/base.html' %}
+
+{% block titulo %}Dashboard — Inversiones Ramón{% endblock %}
+{% block topbar_titulo %}Dashboard{% endblock %}
+
+{% block contenido %}
+
+<div class="row g-3 mb-4">
+  <div class="col-sm-6 col-lg-3">
+    <div class="stat-card">
+      <div class="stat-icon azul"><i class="bi bi-box-seam"></i></div>
+      <div>
+        <div class="stat-num">{{ total_productos }}</div>
+        <div class="stat-label">Productos activos</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-lg-3">
+    <div class="stat-card">
+      <div class="stat-icon rojo"><i class="bi bi-exclamation-triangle"></i></div>
+      <div>
+        <div class="stat-num">{{ productos_bajo_stock|length }}</div>
+        <div class="stat-label">Stock bajo</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-lg-3">
+    <div class="stat-card">
+      <div class="stat-icon naranja"><i class="bi bi-send"></i></div>
+      <div>
+        <div class="stat-num">{{ solicitudes_pendientes }}</div>
+        <div class="stat-label">Solicitudes pendientes</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% if productos_bajo_stock %}
+<div class="card mb-4">
+  <div class="card-header d-flex align-items-center gap-2">
+    <i class="bi bi-exclamation-triangle text-danger"></i>
+    Productos con stock bajo
+  </div>
+  <div class="card-body p-0 table-responsive">
+    <table class="table table-hover mb-0">
+      <thead>
+        <tr>
+          <th>Código</th>
+          <th>Producto</th>
+          <th>Stock actual</th>
+          <th>Mínimo</th>
+          <th>Sugerido a pedir</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in productos_bajo_stock %}
+        <tr>
+          <td><code>{{ p.codigo }}</code></td>
+          <td>{{ p.nombre }}</td>
+          <td><span class="badge bg-danger">{{ p.stock_actual }}</span></td>
+          <td>{{ p.stock_minimo }}</td>
+          <td><strong>{{ p.cantidad_sugerida_pedido }}</strong> unidades</td>
+          <td>
+            {% if user.es_encargado %}
+            <a href="{% url 'inventario:crear_solicitud' %}?producto={{ p.pk }}"
+               class="btn btn-sm btn-primary">Solicitar</a>
+            {% else %}
+            <a href="{% url 'inventario:detalle_producto' p.pk %}"
+               class="btn btn-sm btn-outline-secondary">Ver</a>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+{% endblock %}

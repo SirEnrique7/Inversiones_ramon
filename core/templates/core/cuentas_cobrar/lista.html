@@ -1,0 +1,55 @@
+{% extends 'core/base.html' %}
+{% block titulo %}Cuentas por cobrar{% endblock %}
+{% block topbar_titulo %}Cuentas por cobrar — Clientes (Fiado){% endblock %}
+{% block contenido %}
+<div class="row g-3 mb-4">
+  <div class="col-sm-6 col-xl-3">
+    <div class="stat-card"><div class="stat-icon verde"><i class="bi bi-cash-stack"></i></div>
+      <div><div class="stat-num">Bs {{ resumen.total_bs|default:"0"|floatformat:2 }}</div><div class="stat-label">Total por cobrar</div></div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-xl-3">
+    <div class="stat-card"><div class="stat-icon azul"><i class="bi bi-currency-dollar"></i></div>
+      <div><div class="stat-num">$ {{ resumen.total_usd|default:"0"|floatformat:2 }}</div><div class="stat-label">Equivalente USD</div></div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-xl-3">
+    <div class="stat-card"><div class="stat-icon naranja"><i class="bi bi-people"></i></div>
+      <div><div class="stat-num">{{ resumen.cantidad|default:0 }}</div><div class="stat-label">Deudores activos</div></div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-xl-3">
+    <div class="stat-card"><div class="stat-icon rojo"><i class="bi bi-alarm"></i></div>
+      <div><div class="stat-num">{{ resumen.vencidas|default:0 }}</div><div class="stat-label">Vencidas</div></div>
+    </div>
+  </div>
+</div>
+<div class="mb-3 d-flex gap-2">
+  <a href="?estado=pendiente" class="btn btn-sm {% if estado == 'pendiente' %}btn-warning{% else %}btn-outline-warning{% endif %}">Pendientes</a>
+  <a href="?estado=abonada"  class="btn btn-sm {% if estado == 'abonada' %}btn-primary{% else %}btn-outline-primary{% endif %}">Abonadas</a>
+  <a href="?estado=saldada"  class="btn btn-sm {% if estado == 'saldada' %}btn-success{% else %}btn-outline-success{% endif %}">Saldadas</a>
+  <a href="?estado=todas"    class="btn btn-sm {% if estado == 'todas' %}btn-dark{% else %}btn-outline-secondary{% endif %}">Todas</a>
+</div>
+<div class="card">
+  <div class="card-body p-0">
+    <table class="table table-hover mb-0">
+      <thead><tr><th>Ref.</th><th>Cliente</th><th>Teléfono</th><th>Monto orig.</th><th>Saldo (Bs.)</th><th>F. venta</th><th>F. estimada pago</th><th>Estado</th><th></th></tr></thead>
+      <tbody>
+        {% for c in cuentas %}
+        <tr {% if c.vencida %}class="table-danger"{% endif %}>
+          <td><code>CPC-{{ c.pk|stringformat:"04d" }}</code></td>
+          <td><strong>{{ c.cliente.get_nombre_completo }}</strong><div class="text-muted" style="font-size:.75rem">{{ c.cliente.cedula_rif }}</div></td>
+          <td>{{ c.cliente.telefono|default:"—" }}</td>
+          <td>Bs. {{ c.monto_bs|floatformat:2 }}{% if c.monto_usd %}<div class="text-muted" style="font-size:.75rem">$ {{ c.monto_usd|floatformat:2 }}</div>{% endif %}</td>
+          <td><strong class="{% if c.vencida %}text-danger{% endif %}">Bs. {{ c.saldo_restante|floatformat:2 }}</strong></td>
+          <td>{{ c.fecha_venta|date:"d/m/Y" }}</td>
+          <td>{{ c.fecha_estimada_pago|date:"d/m/Y" }}{% if c.vencida %}<span class="badge bg-danger ms-1">Vencida</span>{% endif %}</td>
+          <td>{% if c.estado == 'pendiente' %}<span class="badge bg-warning text-dark">Pendiente</span>{% elif c.estado == 'abonada' %}<span class="badge bg-primary">Abonada</span>{% else %}<span class="badge bg-success">Saldada</span>{% endif %}</td>
+          <td><a href="{% url 'core:detalle_cuenta_cobrar' c.pk %}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-eye"></i></a></td>
+        </tr>
+        {% empty %}<tr><td colspan="9" class="text-center text-muted py-4">Sin cuentas en este estado.</td></tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

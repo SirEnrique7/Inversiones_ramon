@@ -1,0 +1,112 @@
+{% extends 'core/base.html' %}
+{% block titulo %}Reporte Financiero{% endblock %}
+{% block topbar_titulo %}Reporte Financiero{% endblock %}
+
+{% block contenido %}
+
+<div class="row g-3 mb-4">
+  <div class="col-sm-6">
+    <div class="stat-card">
+      <div class="stat-icon verde"><i class="bi bi-cash-stack"></i></div>
+      <div>
+        <div class="stat-num" style="font-size:1.1rem">
+          Bs. {{ resumen_cobrar.total_bs|default:"0"|floatformat:2 }}
+        </div>
+        <div class="stat-label">Por cobrar — {{ resumen_cobrar.cantidad|default:0 }} clientes
+          {% if resumen_cobrar.vencidas %}<span class="badge bg-danger ms-1">{{ resumen_cobrar.vencidas }} vencidas</span>{% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-6">
+    <div class="stat-card">
+      <div class="stat-icon rojo"><i class="bi bi-credit-card"></i></div>
+      <div>
+        <div class="stat-num" style="font-size:1.1rem">
+          Bs. {{ resumen_pagar.total_bs|default:"0"|floatformat:2 }}
+        </div>
+        <div class="stat-label">Por pagar — {{ resumen_pagar.cantidad|default:0 }} proveedores
+          {% if resumen_pagar.vencidas %}<span class="badge bg-danger ms-1">{{ resumen_pagar.vencidas }} vencidas</span>{% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3">
+  <!-- Cuentas por cobrar -->
+  <div class="col-12">
+    <div class="card mb-3">
+      <div class="card-header">Cuentas por cobrar (clientes con fiado)</div>
+      <div class="card-body p-0">
+        <table class="table table-hover mb-0">
+          <thead>
+            <tr><th>Cliente</th><th>Cédula/RIF</th><th>Teléfono</th>
+            <th class="text-end">Monto orig.</th><th class="text-end">Saldo Bs.</th>
+            <th class="text-end">Saldo USD</th><th>F. venta</th>
+            <th>F. estimada pago</th><th>Estado</th></tr>
+          </thead>
+          <tbody>
+            {% for c in cobrar %}
+            <tr {% if c.vencida %}class="table-danger"{% endif %}>
+              <td><strong>{{ c.cliente.get_nombre_completo }}</strong></td>
+              <td>{{ c.cliente.cedula_rif }}</td>
+              <td>{{ c.cliente.telefono|default:"—" }}</td>
+              <td class="text-end">Bs. {{ c.monto_bs|floatformat:2 }}</td>
+              <td class="text-end"><strong>Bs. {{ c.saldo_restante|floatformat:2 }}</strong></td>
+              <td class="text-end">$ {{ c.monto_usd|default:"—"|floatformat:2 }}</td>
+              <td>{{ c.fecha_venta|date:"d/m/Y" }}</td>
+              <td>{{ c.fecha_estimada_pago|date:"d/m/Y" }}
+                {% if c.vencida %}<span class="badge bg-danger ms-1">Vencida</span>{% endif %}
+              </td>
+              <td>{% if c.estado == 'pendiente' %}<span class="badge bg-warning text-dark">Pendiente</span>
+                  {% elif c.estado == 'abonada' %}<span class="badge bg-primary">Abonada</span>
+                  {% else %}<span class="badge bg-success">Saldada</span>{% endif %}
+              </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="9" class="text-center text-muted py-3">Sin cuentas por cobrar.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Cuentas por pagar -->
+  <div class="col-12">
+    <div class="card">
+      <div class="card-header">Cuentas por pagar (proveedores a crédito)</div>
+      <div class="card-body p-0">
+        <table class="table table-hover mb-0">
+          <thead>
+            <tr><th>Proveedor</th><th>Compra</th>
+            <th class="text-end">Monto orig.</th><th class="text-end">Saldo Bs.</th>
+            <th class="text-end">Saldo USD</th><th>Vencimiento</th><th>Estado</th></tr>
+          </thead>
+          <tbody>
+            {% for c in pagar %}
+            <tr {% if c.vencida %}class="table-danger"{% endif %}>
+              <td><strong>{{ c.proveedor.nombre }}</strong></td>
+              <td><a href="{% url 'compras:detalle_compra' c.compra.pk %}">{{ c.compra.numero_referencia }}</a></td>
+              <td class="text-end">Bs. {{ c.monto_bs|floatformat:2 }}</td>
+              <td class="text-end"><strong>Bs. {{ c.saldo_restante|floatformat:2 }}</strong></td>
+              <td class="text-end">$ {{ c.monto_usd|default:"—"|floatformat:2 }}</td>
+              <td>{{ c.fecha_vencimiento|date:"d/m/Y"|default:"—" }}
+                {% if c.vencida %}<span class="badge bg-danger ms-1">Vencida</span>{% endif %}
+              </td>
+              <td>{% if c.estado == 'pendiente' %}<span class="badge bg-warning text-dark">Pendiente</span>
+                  {% elif c.estado == 'abonada' %}<span class="badge bg-primary">Abonada</span>
+                  {% else %}<span class="badge bg-success">Saldada</span>{% endif %}
+              </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="7" class="text-center text-muted py-3">Sin cuentas por pagar.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

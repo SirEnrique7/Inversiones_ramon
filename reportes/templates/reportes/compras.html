@@ -1,0 +1,45 @@
+{% extends 'core/base.html' %}
+{% block titulo %}Reporte de Compras{% endblock %}
+{% block topbar_titulo %}Reporte de Compras{% endblock %}
+{% block contenido %}
+<div class="card mb-4"><div class="card-body py-2">
+  <form method="get" class="d-flex gap-2 align-items-center flex-wrap">
+    <label class="form-label mb-0 fw-semibold small">Período:</label>
+    <input type="date" name="fecha_inicio" value="{{ fecha_inicio|date:'Y-m-d' }}" class="form-control form-control-sm" style="width:160px">
+    <span class="text-muted small">al</span>
+    <input type="date" name="fecha_fin" value="{{ fecha_fin|date:'Y-m-d' }}" class="form-control form-control-sm" style="width:160px">
+    <select name="proveedor" class="form-select form-select-sm" style="width:200px">
+      <option value="">Todos los proveedores</option>
+      {% for p in proveedores %}
+      <option value="{{ p.pk }}" {% if proveedor_id|stringformat:"s" == p.pk|stringformat:"s" %}selected{% endif %}>{{ p.nombre }}</option>
+      {% endfor %}
+    </select>
+    <button type="submit" class="btn btn-sm btn-primary">Aplicar</button>
+    <a href="{% url 'reportes:compras' %}" class="btn btn-sm btn-link">Limpiar</a>
+  </form>
+</div></div>
+<div class="row g-3 mb-4">
+  <div class="col-sm-4"><div class="stat-card"><div class="stat-icon azul"><i class="bi bi-cart3"></i></div>
+    <div><div class="stat-num">{{ totales.cantidad|default:0 }}</div><div class="stat-label">Órdenes recibidas</div></div>
+  </div></div>
+  <div class="col-sm-4"><div class="stat-card"><div class="stat-icon rojo"><i class="bi bi-cash-stack"></i></div>
+    <div><div class="stat-num" style="font-size:1.1rem">Bs. {{ totales.total_bs|default:"0"|floatformat:2 }}</div><div class="stat-label">Total comprado</div></div>
+  </div></div>
+  <div class="col-sm-4"><div class="stat-card"><div class="stat-icon naranja"><i class="bi bi-hourglass"></i></div>
+    <div><div class="stat-num" style="font-size:1.1rem">Bs. {{ pendientes_pago|floatformat:2 }}</div><div class="stat-label">Crédito pendiente</div></div>
+  </div></div>
+</div>
+<div class="card">
+  <div class="card-header">Compras por proveedor</div>
+  <div class="card-body p-0">
+    <table class="table table-hover mb-0">
+      <thead><tr><th>Proveedor</th><th class="text-center">Órdenes</th><th class="text-end">Total (Bs.)</th></tr></thead>
+      <tbody>
+        {% for p in por_proveedor %}
+        <tr><td>{{ p.proveedor__nombre }}</td><td class="text-center">{{ p.cantidad }}</td><td class="text-end">Bs. {{ p.total|floatformat:2 }}</td></tr>
+        {% empty %}<tr><td colspan="3" class="text-center text-muted py-3">Sin compras en el período.</td></tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

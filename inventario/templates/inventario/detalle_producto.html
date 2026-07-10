@@ -1,0 +1,135 @@
+{% extends 'inventario/base.html' %}
+{% block titulo %}{{ producto.nombre }} — Inversiones Ramón{% endblock %}
+{% block topbar_titulo %}Detalle del producto{% endblock %}
+
+{% block topbar_acciones %}
+  {% if user.es_admin %}
+  <a href="{% url 'inventario:editar_producto' producto.pk %}" class="btn btn-sm btn-outline-primary">
+    <i class="bi bi-pencil me-1"></i>Editar
+  </a>
+  {% endif %}
+  {% if user.es_encargado and producto.stock_bajo %}
+  <a href="{% url 'inventario:crear_solicitud' %}?producto={{ producto.pk }}" class="btn btn-sm btn-warning">
+    <i class="bi bi-send me-1"></i>Solicitar reposición
+  </a>
+  {% endif %}
+{% endblock %}
+
+{% block contenido %}
+<div class="row g-3">
+
+  <div class="col-lg-4">
+    <div class="card h-100">
+      <div class="card-header">Información del producto</div>
+      <div class="card-body">
+        <div class="mb-1 text-muted" style="font-size:.8rem">Código</div>
+        <div class="mb-3"><code class="fs-6">{{ producto.codigo }}</code></div>
+
+        <div class="mb-1 text-muted" style="font-size:.8rem">Nombre</div>
+        <div class="mb-3 fw-semibold">{{ producto.nombre }}</div>
+
+        {% if producto.descripcion %}
+        <div class="mb-1 text-muted" style="font-size:.8rem">Descripción</div>
+        <div class="mb-3">{{ producto.descripcion }}</div>
+        {% endif %}
+
+        <div class="mb-1 text-muted" style="font-size:.8rem">Categoría</div>
+        <div class="mb-3">{{ producto.categoria.nombre|default:"Sin categoría" }}</div>
+
+        <div class="mb-1 text-muted" style="font-size:.8rem">Proveedor</div>
+        <div class="mb-3">{{ producto.proveedor.nombre|default:"Sin proveedor" }}
+          {% if producto.proveedor.dia_visita %}
+          <small class="text-muted">(visita: {{ producto.proveedor.get_dia_visita_display }})</small>
+          {% endif %}
+        </div>
+
+        <hr>
+        <div class="row text-center">
+          <div class="col-6">
+            <div class="text-muted" style="font-size:.75rem">Precio compra</div>
+            <div class="fw-semibold">Bs {{ producto.precio_compra }}</div>
+          </div>
+          <div class="col-6">
+            <div class="text-muted" style="font-size:.75rem">Precio venta</div>
+            <div class="fw-semibold text-success">Bs {{ producto.precio_venta }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-4">
+    <div class="card h-100">
+      <div class="card-header">Estado del stock</div>
+      <div class="card-body text-center">
+        <div class="display-4 fw-bold {% if producto.stock_bajo %}text-danger{% else %}text-success{% endif %}">
+          {{ producto.stock_actual }}
+        </div>
+        <div class="text-muted mb-3">unidades disponibles</div>
+
+        <div class="d-flex justify-content-around text-center mb-3">
+          <div>
+            <div class="fw-semibold">{{ producto.stock_minimo }}</div>
+            <div class="text-muted" style="font-size:.8rem">Mínimo</div>
+          </div>
+          <div>
+            <div class="fw-semibold">{{ producto.dias_cobertura }}</div>
+            <div class="text-muted" style="font-size:.8rem">Días cobertura</div>
+          </div>
+        </div>
+
+        {% if producto.stock_bajo %}
+        <div class="alert alert-danger py-2">
+          <i class="bi bi-exclamation-triangle me-1"></i>
+          Stock bajo. Se sugiere pedir
+          <strong>{{ producto.cantidad_sugerida_pedido }} unidades</strong>.
+        </div>
+        {% else %}
+        <div class="alert alert-success py-2">
+          <i class="bi bi-check-circle me-1"></i>Stock suficiente
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="col-12">
+    <div class="card">
+      <div class="card-header">Últimos movimientos de inventario</div>
+      <div class="card-body p-0 table-responsive">
+        {% if movimientos %}
+        <table class="table table-hover mb-0">
+          <thead>
+            <tr>
+              <th>Fecha</th>
+              <th>Tipo</th>
+              <th>Cantidad</th>
+              <th>Motivo</th>
+              <th>Usuario</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for m in movimientos %}
+            <tr>
+              <td>{{ m.fecha|date:"d/m/Y H:i" }}</td>
+              <td>
+                {% if m.tipo == 'entrada' %}<span class="badge bg-success">Entrada</span>
+                {% elif m.tipo == 'salida' %}<span class="badge bg-danger">Salida</span>
+                {% else %}<span class="badge bg-secondary">Ajuste</span>{% endif %}
+              </td>
+              <td>{{ m.cantidad }}</td>
+              <td>{{ m.motivo|default:"—" }}</td>
+              <td>{{ m.usuario.username|default:"Sistema" }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        {% else %}
+        <div class="text-center py-4 text-muted">Sin movimientos registrados aún.</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

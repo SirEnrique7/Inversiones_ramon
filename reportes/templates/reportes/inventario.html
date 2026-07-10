@@ -1,0 +1,119 @@
+{% extends 'core/base.html' %}
+{% block titulo %}Estado del Inventario{% endblock %}
+{% block topbar_titulo %}Estado del Inventario{% endblock %}
+
+{% block contenido %}
+
+<div class="row g-3 mb-4">
+  <div class="col-sm-6 col-xl-3">
+    <div class="stat-card">
+      <div class="stat-icon morado"><i class="bi bi-box-seam"></i></div>
+      <div>
+        <div class="stat-num">{{ total_productos }}</div>
+        <div class="stat-label">Productos activos</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-xl-3">
+    <div class="stat-card">
+      <div class="stat-icon verde"><i class="bi bi-bank"></i></div>
+      <div>
+        <div class="stat-num" style="font-size:1.1rem">Bs. {{ valorizacion|floatformat:2 }}</div>
+        <div class="stat-label">Valor patrimonial (costo)</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-xl-3">
+    <div class="stat-card">
+      <div class="stat-icon rojo"><i class="bi bi-exclamation-triangle"></i></div>
+      <div>
+        <div class="stat-num">{{ bajo_stock|length }}</div>
+        <div class="stat-label">Con stock bajo</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-xl-3">
+    <div class="stat-card">
+      <div class="stat-icon naranja"><i class="bi bi-graph-up-arrow"></i></div>
+      <div>
+        <div class="stat-num">{{ en_tendencia|length }}</div>
+        <div class="stat-label">En tendencia</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3">
+
+  <!-- Por categoría -->
+  <div class="col-lg-4">
+    <div class="card">
+      <div class="card-header">Stock por categoría</div>
+      <div class="card-body p-0">
+        <table class="table mb-0">
+          <thead><tr><th>Categoría</th><th class="text-center">Productos</th><th class="text-end">Stock total</th></tr></thead>
+          <tbody>
+            {% for c in por_categoria %}
+            <tr>
+              <td>{{ c.categoria__nombre|default:"Sin categoría" }}</td>
+              <td class="text-center">{{ c.cantidad }}</td>
+              <td class="text-end">{{ c.stock_total }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="3" class="text-center text-muted py-3">Sin datos.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stock bajo -->
+  <div class="col-lg-8">
+    <div class="card">
+      <div class="card-header text-danger">
+        <i class="bi bi-exclamation-triangle me-1"></i> Productos con stock bajo
+      </div>
+      <div class="card-body p-0">
+        <table class="table table-hover mb-0">
+          <thead>
+            <tr>
+              <th>Producto</th>
+              <th>Proveedor</th>
+              <th class="text-center">Stock</th>
+              <th class="text-center">Mínimo</th>
+              <th class="text-center">Tendencia</th>
+              <th class="text-end">Sugerido pedir</th>
+            </tr>
+          </thead>
+          <tbody>
+            {# bajo_stock es lista de dicts: {producto, cantidad_sugerida} #}
+            {% for item in bajo_stock %}
+            <tr>
+              <td>
+                <strong>{{ item.producto.nombre }}</strong>
+                <div class="text-muted" style="font-size:.75rem"><code>{{ item.producto.codigo }}</code></div>
+              </td>
+              <td>{{ item.producto.proveedor.nombre|default:"—" }}</td>
+              <td class="text-center">
+                <span class="badge bg-danger">{{ item.producto.stock_actual }}</span>
+              </td>
+              <td class="text-center text-muted">{{ item.producto.stock_minimo }}</td>
+              <td class="text-center">
+                {% if item.producto.en_tendencia %}
+                <span class="badge bg-warning text-dark">↑ Tendencia</span>
+                {% else %}—{% endif %}
+              </td>
+              <td class="text-end"><strong>{{ item.cantidad_sugerida }}</strong> unid.</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="6" class="text-center text-muted py-3">Sin productos con stock bajo.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

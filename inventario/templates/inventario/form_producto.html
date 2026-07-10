@@ -1,0 +1,97 @@
+{% extends 'inventario/base.html' %}
+{% block titulo %}{{ titulo }} — Inversiones Ramón{% endblock %}
+{% block topbar_titulo %}{{ titulo }}{% endblock %}
+
+{% block contenido %}
+<div class="row justify-content-center">
+  <div class="col-lg-7">
+    <div class="card">
+      <div class="card-header">{{ titulo }}</div>
+      <div class="card-body">
+        <form method="post">
+          {% csrf_token %}
+
+          {% if form.non_field_errors %}
+          <div class="alert alert-danger py-2 small">
+            {% for error in form.non_field_errors %}
+              <i class="bi bi-exclamation-circle me-1"></i> {{ error }}
+            {% endfor %}
+          </div>
+          {% endif %}
+
+          <div class="row g-3">
+            <div class="col-12">
+              <label class="form-label fw-semibold">{{ form.nombre.label }}</label>
+              {{ form.nombre }}
+              {% if form.nombre.errors %}<div class="text-danger small mt-1">{{ form.nombre.errors }}</div>{% endif %}
+            </div>
+
+            <div class="col-12">
+              <label class="form-label fw-semibold">{{ form.descripcion.label }}</label>
+              {{ form.descripcion }}
+              {% if form.descripcion.errors %}<div class="text-danger small mt-1">{{ form.descripcion.errors }}</div>{% endif %}
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">{{ form.categoria.label }}</label>
+              {{ form.categoria }}
+              {% if form.categoria.errors %}<div class="text-danger small mt-1">{{ form.categoria.errors }}</div>{% endif %}
+            </div>
+            
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">{{ form.proveedor.label }}</label>
+              {{ form.proveedor }}
+              {% if form.proveedor.errors %}<div class="text-danger small mt-1">{{ form.proveedor.errors }}</div>{% endif %}
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">{{ form.precio_compra.label }}</label>
+              {{ form.precio_compra }}
+              {% if form.precio_compra.errors %}<div class="text-danger small mt-1">{{ form.precio_compra.errors }}</div>{% endif %}
+            </div>
+            
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">{{ form.precio_venta.label }}</label>
+              {{ form.precio_venta }}
+              {% if form.precio_venta.errors %}<div class="text-danger small mt-1">{{ form.precio_venta.errors }}</div>{% endif %}
+            </div>
+
+            <div class="col-md-4">
+              <label class="form-label fw-semibold">{{ form.stock_actual.label }}</label>
+              {{ form.stock_actual }}
+              {% if form.stock_actual.errors %}<div class="text-danger small mt-1">{{ form.stock_actual.errors }}</div>{% endif %}
+            </div>
+            
+            <div class="col-md-4">
+              <label class="form-label fw-semibold">{{ form.stock_minimo.label }}</label>
+              {{ form.stock_minimo }}
+              {% if form.stock_minimo.errors %}<div class="text-danger small mt-1">{{ form.stock_minimo.errors }}</div>{% endif %}
+            </div>
+            
+            <div class="col-md-4">
+              <label class="form-label fw-semibold">{{ form.dias_cobertura.label }}
+                <i class="bi bi-info-circle text-muted" title="Días que debe durar el stock para el cálculo de pedidos"></i>
+              </label>
+              {{ form.dias_cobertura }}
+              {% if form.dias_cobertura.errors %}<div class="text-danger small mt-1">{{ form.dias_cobertura.errors }}</div>{% endif %}
+            </div>
+
+            <div class="col-12">
+              <div class="form-check">
+                {{ form.activo }}
+                <label class="form-check-label">{{ form.activo.label }}</label>
+              </div>
+              {% if form.activo.errors %}<div class="text-danger small mt-1">{{ form.activo.errors }}</div>{% endif %}
+            </div>
+          </div>
+
+          <div class="d-flex gap-2 mt-4">
+            <button type="submit" class="btn btn-primary">{{ accion }}</button>
+            <a href="{% url 'inventario:lista_productos' %}" class="btn btn-outline-secondary">Cancelar</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

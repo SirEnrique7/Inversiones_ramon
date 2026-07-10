@@ -1,0 +1,22 @@
+# ══════════════════════════════════════════════════════════════
+# requirements.txt — Dependencias del proyecto
+# Instalar con: pip install -r requirements.txt
+# ══════════════════════════════════════════════════════════════
+
+# Framework principal
+Django==4.2.16
+
+# Scraping de tasa BCV
+requests==2.31.0
+
+# Variables de entorno (.env)
+python-decouple==3.8
+
+# Servidor de producción (reemplaza a runserver)
+gunicorn==21.2.0
+
+# Archivos estáticos en producción (sin nginx dedicado)
+whitenoise==6.6.0
+
+# Base de datos PostgreSQL
+psycopg2-binary==2.9.12

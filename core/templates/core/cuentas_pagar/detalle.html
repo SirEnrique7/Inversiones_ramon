@@ -1,0 +1,44 @@
+{% extends 'core/base.html' %}
+{% block titulo %}CPP-{{ cuenta.pk|stringformat:"04d" }}{% endblock %}
+{% block topbar_titulo %}Cuenta por pagar — {{ cuenta.proveedor.nombre }}{% endblock %}
+{% block contenido %}
+<div class="row g-3">
+  <div class="col-lg-5">
+    <div class="card mb-3"><div class="card-header">Detalle</div><div class="card-body">
+      <div class="row g-2">
+        <div class="col-6"><div class="text-muted small">Compra</div><a href="{% url 'compras:detalle_compra' cuenta.compra.pk %}">{{ cuenta.compra.numero_referencia }}</a></div>
+        <div class="col-6"><div class="text-muted small">Proveedor</div>{{ cuenta.proveedor.nombre }}</div>
+        <div class="col-6"><div class="text-muted small">Monto original</div><strong>Bs. {{ cuenta.monto_bs|floatformat:2 }}</strong></div>
+        <div class="col-6"><div class="text-muted small">USD (tasa {{ cuenta.tasa_bcv_momento|default:"—" }})</div>$ {{ cuenta.monto_usd|default:"—"|floatformat:2 }}</div>
+        <div class="col-6"><div class="text-muted small">Saldo restante</div><span class="fs-5 fw-bold {% if cuenta.vencida %}text-danger{% else %}text-warning{% endif %}">Bs. {{ cuenta.saldo_restante|floatformat:2 }}</span></div>
+        <div class="col-6"><div class="text-muted small">Vencimiento</div>{{ cuenta.fecha_vencimiento|date:"d/m/Y"|default:"—" }}{% if cuenta.vencida %}<span class="badge bg-danger ms-1">Vencida</span>{% endif %}</div>
+      </div>
+    </div></div>
+    {% if cuenta.estado != 'saldada' %}
+    <div class="card"><div class="card-header">Registrar pago al proveedor</div><div class="card-body">
+      <form method="post" action="{% url 'core:registrar_abono_proveedor' cuenta.pk %}">{% csrf_token %}
+        {{ form.tasa_bcv.as_hidden }}
+        <div class="mb-3"><label class="form-label fw-semibold">{{ form.monto_bs.label }}</label>{{ form.monto_bs }}</div>
+        <div class="mb-3"><label class="form-label fw-semibold">{{ form.referencia.label }}</label>{{ form.referencia }}<div class="form-text">Obligatorio para auditoría.</div></div>
+        <button type="submit" class="btn btn-primary w-100">Confirmar pago</button>
+      </form>
+    </div></div>
+    {% else %}
+    <div class="alert alert-success">Saldada el {{ cuenta.fecha_saldada|date:"d/m/Y H:i" }}</div>
+    {% endif %}
+  </div>
+  <div class="col-lg-7">
+    <div class="card"><div class="card-header">Historial de pagos</div><div class="card-body p-0">
+      <table class="table table-hover mb-0">
+        <thead><tr><th>Fecha</th><th>Monto (Bs.)</th><th>Referencia</th><th>Por</th></tr></thead>
+        <tbody>
+          {% for a in abonos %}<tr>
+            <td>{{ a.fecha|date:"d/m/Y H:i" }}</td><td><strong>Bs. {{ a.monto_bs|floatformat:2 }}</strong></td>
+            <td><code>{{ a.referencia }}</code></td><td>{{ a.registrado_por.get_nombre_completo|default:"—" }}</td>
+          </tr>{% empty %}<tr><td colspan="4" class="text-center text-muted py-3">Sin pagos.</td></tr>{% endfor %}
+        </tbody>
+      </table>
+    </div></div>
+  </div>
+</div>
+{% endblock %}

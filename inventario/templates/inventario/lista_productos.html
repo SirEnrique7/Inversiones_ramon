@@ -1,0 +1,123 @@
+{% extends 'inventario/base.html' %}
+
+{% block titulo %}Productos — Inversiones Ramón{% endblock %}
+{% block topbar_titulo %}Productos{% endblock %}
+
+{% block topbar_acciones %}
+  <a href="?{% if filter_params %}{{ filter_params }}&{% endif %}export=csv"
+     class="btn btn-sm btn-outline-success">
+    <i class="bi bi-file-earmark-spreadsheet me-1"></i>Exportar CSV
+  </a>
+  {% if user.es_admin %}
+  <a href="{% url 'inventario:crear_producto' %}" class="btn btn-primary btn-sm">
+    <i class="bi bi-plus-lg me-1"></i>Nuevo producto
+  </a>
+  {% endif %}
+{% endblock %}
+
+{% block contenido %}
+
+<div class="card mb-3">
+  <div class="card-body py-2">
+    <form method="get" class="row g-2 align-items-center">
+      <div class="col-auto flex-grow-1">
+        <input type="text" name="q" value="{{ query }}" class="form-control form-control-sm"
+               placeholder="Buscar por nombre o código...">
+      </div>
+      <div class="col-auto">
+        <select name="categoria" class="form-select form-select-sm">
+          <option value="">Todas las categorías</option>
+          {% for cat in categorias %}
+          <option value="{{ cat.pk }}" {% if request.GET.categoria == cat.pk|stringformat:"s" %}selected{% endif %}>
+            {{ cat.nombre }}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-auto form-check ms-2">
+        <input type="checkbox" name="bajo_stock" id="bajo_stock" class="form-check-input"
+               {% if request.GET.bajo_stock %}checked{% endif %}>
+        <label for="bajo_stock" class="form-check-label" style="font-size:.85rem">Solo bajo stock</label>
+      </div>
+      <div class="col-auto">
+        <button type="submit" class="btn btn-sm btn-outline-secondary">Filtrar</button>
+        <a href="{% url 'inventario:lista_productos' %}" class="btn btn-sm btn-link text-decoration-none">Limpiar</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-body p-0 table-responsive">
+    {% if productos %}
+    <table class="table table-hover align-middle mb-0">
+      <thead>
+        <tr>
+          <th>Código</th>
+          <th>Nombre</th>
+          <th>Categoría</th>
+          <th>Precio venta</th>
+          <th>Stock</th>
+          <th>Estado</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in productos %}
+        <tr>
+          <td><code>{{ p.codigo }}</code></td>
+          <td class="fw-semibold">{{ p.nombre }}</td>
+          <td>{{ p.categoria.nombre|default:"—" }}</td>
+          <td>Bs {{ p.precio_venta }}</td>
+          <td>
+            {% if p.stock_bajo %}
+            <span class="badge bg-danger">{{ p.stock_actual }}</span>
+            <small class="text-muted d-block d-sm-inline ms-sm-1">/{{ p.stock_minimo }} mín.</small>
+            {% else %}
+            <span class="badge bg-success">{{ p.stock_actual }}</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if p.activo %}
+            <span class="badge bg-success-subtle text-success">Activo</span>
+            {% else %}
+            <span class="badge bg-secondary-subtle text-secondary">Inactivo</span>
+            {% endif %}
+          </td>
+          <td class="text-end">
+            <div class="btn-group">
+              <a href="{% url 'inventario:detalle_producto' p.pk %}" class="btn btn-sm btn-outline-secondary" title="Ver detalles">
+                <i class="bi bi-eye"></i>
+              </a>
+              {% if user.es_admin %}
+              <a href="{% url 'inventario:editar_producto' p.pk %}" class="btn btn-sm btn-outline-primary" title="Editar">
+                <i class="bi bi-pencil"></i>
+              </a>
+              {% endif %}
+              {% if user.es_encargado and p.stock_bajo %}
+              <a href="{% url 'inventario:crear_solicitud' %}?producto={{ p.pk }}"
+                 class="btn btn-sm btn-warning" title="Solicitar reposición">
+                <i class="bi bi-send-fill"></i>
+              </a>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="text-center py-5 text-muted">
+      <i class="bi bi-box-seam fs-1 text-secondary d-block mb-3"></i>
+      <p class="mb-2">No se encontraron productos con los criterios de búsqueda.</p>
+      {% if user.es_admin %}
+      <a href="{% url 'inventario:crear_producto' %}" class="btn btn-primary btn-sm mt-2">Crear primer producto</a>
+      {% endif %}
+    </div>
+    {% endif %}
+  </div>
+  <div class="card-body pt-0">
+    {% include 'core/_paginacion.html' %}
+  </div>
+</div>
+{% endblock %}

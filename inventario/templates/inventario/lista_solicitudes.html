@@ -1,0 +1,70 @@
+{% extends 'inventario/base.html' %}
+{% block titulo %}Solicitudes — Inversiones Ramón{% endblock %}
+{% block topbar_titulo %}Solicitudes de inventario{% endblock %}
+
+{% block topbar_acciones %}
+  {% if user.es_encargado %}
+  <a href="{% url 'inventario:crear_solicitud' %}" class="btn btn-sm btn-primary">
+    <i class="bi bi-plus-lg me-1"></i>Nueva solicitud
+  </a>
+  {% endif %}
+{% endblock %}
+
+{% block contenido %}
+<div class="card">
+  <div class="card-body p-0 table-responsive">
+    {% if solicitudes %}
+    <table class="table table-hover align-middle mb-0">
+      <thead>
+        <tr>
+          <th>#</th>
+          {% if user.es_admin %}<th>Empleado</th>{% endif %}
+          <th>Producto</th>
+          <th>Cantidad</th>
+          <th>Fecha</th>
+          <th>Estado</th>
+          <th>Observación</th>
+          {% if user.es_admin %}<th></th>{% endif %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for s in solicitudes %}
+        <tr>
+          <td><small class="text-muted">{{ s.id }}</small></td>
+          {% if user.es_admin %}
+          <td class="fw-semibold">{{ s.empleado.username }}</td>
+          {% endif %}
+          <td>{{ s.producto.nombre }}</td>
+          <td class="fw-bold">{{ s.cantidad_solicitada }}</td>
+          <td>{{ s.fecha_solicitud|date:"d/m/Y H:i" }}</td>
+          <td>
+            <span class="badge {% if s.estado == 'pendiente' %}bg-warning text-dark{% elif s.estado == 'aprobada' %}bg-success{% else %}bg-danger{% endif %}">
+              {{ s.get_estado_display }}
+            </span>
+          </td>
+          <td class="text-muted" title="{{ s.observacion }}">{{ s.observacion|default:"—"|truncatechars:40 }}</td>
+          {% if user.es_admin %}
+          <td class="text-end pe-3">
+            {% if s.estado == 'pendiente' %}
+            <a href="{% url 'inventario:responder_solicitud' s.pk %}" class="btn btn-sm btn-primary py-1">
+              <i class="bi bi-chat-left-dots me-1"></i>Responder
+            </a>
+            {% endif %}
+          </td>
+          {% endif %}
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="text-center py-5 text-muted">
+      <i class="bi bi-send display-5 d-block mb-3 text-secondary"></i>
+      <p class="mb-0">No hay solicitudes registradas en este momento.</p>
+    </div>
+    {% endif %}
+  </div>
+  <div class="card-body pt-0">
+    {% include 'core/_paginacion.html' %}
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,107 @@
+{% extends 'core/base.html' %}
+{% block titulo %}Abastecimiento Crítico{% endblock %}
+{% block topbar_titulo %}Panel de Abastecimiento Crítico{% endblock %}
+
+{% block contenido %}
+
+<!-- Filtro por proveedor -->
+<div class="card mb-3">
+  <div class="card-body py-2">
+    <form method="get" class="d-flex gap-2 align-items-center">
+      <label class="form-label mb-0 fw-semibold small">Filtrar por proveedor:</label>
+      <select name="proveedor" class="form-select form-select-sm" style="max-width:260px">
+        <option value="">Todos los proveedores</option>
+        {% for p in proveedores %}
+        <option value="{{ p.pk }}" {% if proveedor_id == p.pk|stringformat:"s" %}selected{% endif %}>
+          {{ p.nombre }}
+          {% if p.dia_visita %}(visita: {{ p.get_dia_visita_display }}){% endif %}
+        </option>
+        {% endfor %}
+      </select>
+      <button type="submit" class="btn btn-sm btn-outline-secondary">Filtrar</button>
+      <a href="{% url 'reportes:abastecimiento' %}" class="btn btn-sm btn-link">Limpiar</a>
+    </form>
+  </div>
+</div>
+
+{% if criticos %}
+<div class="card">
+  <div class="card-header d-flex align-items-center justify-content-between">
+    <span>
+      <i class="bi bi-exclamation-triangle text-danger me-2"></i>
+      {{ criticos|length }} producto{% if criticos|length != 1 %}s{% endif %} requieren reposición
+    </span>
+    <span class="text-muted small">Proyección a 2 semanas</span>
+  </div>
+  <div class="card-body p-0">
+    <table class="table table-hover mb-0">
+      <thead>
+        <tr>
+          <th>Producto</th>
+          <th>Proveedor</th>
+          <th class="text-center">Stock actual</th>
+          <th class="text-center">Mínimo</th>
+          <th class="text-center">Vendido (7d)</th>
+          <th class="text-center">Alerta</th>
+          <th class="text-center">Sugerido pedir</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in criticos %}
+        <tr>
+          <td>
+            <strong>{{ item.producto.nombre }}</strong>
+            <div class="text-muted" style="font-size:.75rem"><code>{{ item.producto.codigo }}</code></div>
+          </td>
+          <td>
+            {{ item.producto.proveedor.nombre|default:"—" }}
+            {% if item.producto.proveedor.dia_visita %}
+            <div class="text-muted" style="font-size:.72rem">
+              Visita: {{ item.producto.proveedor.get_dia_visita_display }}
+            </div>
+            {% endif %}
+          </td>
+          <td class="text-center">
+            <span class="badge {% if item.bajo_stock %}bg-danger{% else %}bg-success{% endif %}">
+              {{ item.producto.stock_actual }}
+            </span>
+          </td>
+          <td class="text-center text-muted">{{ item.producto.stock_minimo }}</td>
+          <td class="text-center">{{ item.vol_7d }}</td>
+          <td class="text-center">
+            {% if item.en_tendencia %}
+            <span class="badge bg-warning text-dark">EN TENDENCIA</span>
+            {% endif %}
+            {% if item.bajo_stock %}
+            <span class="badge bg-danger">STOCK BAJO</span>
+            {% endif %}
+          </td>
+          <td class="text-center">
+            <strong class="fs-6">{{ item.sugerido }}</strong>
+            <div class="text-muted" style="font-size:.72rem">unidades</div>
+          </td>
+          <td>
+            <a href="{% url 'compras:crear_compra' %}?proveedor={{ item.producto.proveedor_id }}"
+               class="btn btn-sm btn-primary">
+              <i class="bi bi-cart-plus"></i>
+            </a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% else %}
+<div class="card">
+  <div class="card-body text-center py-5 text-muted">
+    <i class="bi bi-check-circle fs-1 text-success d-block mb-2"></i>
+    <strong>Todo bajo control.</strong>
+    No hay productos con stock crítico ni en tendencia acelerada para este proveedor.
+  </div>
+</div>
+{% endif %}
+
+{% endblock %}

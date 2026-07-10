@@ -1,0 +1,371 @@
+{% extends 'core/base.html' %}
+{% block titulo %}Dashboard — Inversiones Ramón{% endblock %}
+{% block topbar_titulo %}Dashboard{% endblock %}
+
+{% block extra_css %}
+<style>
+  .stat-delta { font-size:.7rem; font-weight:600; padding:.15rem .4rem;
+                border-radius:4px; display:inline-block; margin-top:.25rem; }
+  .delta-up   { background:#d1fae5; color:#065f46; }
+  .delta-warn { background:#fef3c7; color:#92400e; }
+  .delta-danger{ background:#fee2e2; color:#991b1b; }
+  .pulse-dot  { display:inline-block; width:8px; height:8px; border-radius:50%;
+                background:#ef4444; animation:pulse 1.6s infinite; margin-right:.35rem; }
+  @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.5;transform:scale(1.3)} }
+  .chart-card { background:#fff; border:1px solid #e5e7eb; border-radius:12px; padding:1.25rem; }
+  .chart-title{ font-size:.8rem; font-weight:700; text-transform:uppercase;
+                letter-spacing:.07em; color:#6b7280; margin-bottom:1rem; }
+  .activity-item { display:flex; align-items:flex-start; gap:.75rem;
+                   padding:.6rem 0; border-bottom:1px solid #f3f4f6; }
+  .activity-item:last-child { border-bottom:none; }
+  .activity-icon { width:30px; height:30px; border-radius:8px; flex-shrink:0;
+                   display:flex; align-items:center; justify-content:center;
+                   font-size:.8rem; background:#eff6ff; color:#1a56db; }
+  .activity-time { font-size:.7rem; color:#9ca3af; }
+  .activity-desc { font-size:.8rem; color:#374151; line-height:1.4; }
+  .activity-user { font-size:.72rem; color:#6b7280; font-weight:600; }
+  .empty-chart   { display:flex; flex-direction:column; align-items:center;
+                   justify-content:center; height:160px; color:#9ca3af; font-size:.85rem; }
+</style>
+{% endblock %}
+
+{% block contenido %}
+
+{# ── Fila 1: Stats siempre visibles ── #}
+<div class="row g-3 mb-3">
+
+  <div class="col-sm-6 col-xl-3">
+    <div class="stat-card">
+      <div class="stat-icon azul"><i class="bi bi-box-seam"></i></div>
+      <div>
+        <div class="stat-num">{{ total_productos }}</div>
+        <div class="stat-label">Productos activos</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-sm-6 col-xl-3">
+    <div class="stat-card">
+      <div class="stat-icon rojo"><i class="bi bi-exclamation-triangle"></i></div>
+      <div>
+        <div class="stat-num">
+          {% if productos_bajo|length > 0 %}<span class="pulse-dot"></span>{% endif %}
+          {{ productos_bajo|length }}
+        </div>
+        <div class="stat-label">Stock bajo</div>
+        {% if productos_bajo|length > 0 %}
+        <span class="stat-delta delta-danger">Requiere atención</span>
+        {% else %}
+        <span class="stat-delta delta-up">Todo en orden</span>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="col-sm-6 col-xl-3">
+    <div class="stat-card">
+      <div class="stat-icon naranja"><i class="bi bi-cart3"></i></div>
+      <div>
+        <div class="stat-num">{{ compras_pendientes }}</div>
+        <div class="stat-label">Compras por aprobar</div>
+        {% if compras_pendientes > 0 %}
+        <span class="stat-delta delta-warn">Pendiente revisión</span>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="col-sm-6 col-xl-3">
+    <div class="stat-card">
+      <div class="stat-icon verde"><i class="bi bi-receipt"></i></div>
+      <div>
+        <div class="stat-num">{{ ventas_mes }}</div>
+        <div class="stat-label">Ventas este mes</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+{% if puede_ver_financiero %}
+
+{# ── Fila 2: Stats financieras (solo admin) ── #}
+<div class="row g-3 mb-3">
+
+  <div class="col-sm-6 col-xl-3">
+    <div class="stat-card">
+      <div class="stat-icon verde"><i class="bi bi-cash-stack"></i></div>
+      <div>
+        <div class="stat-num" style="font-size:1.2rem">Bs {{ ventas_hoy|floatformat:0 }}</div>
+        <div class="stat-label">Ventas hoy</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-sm-6 col-xl-3">
+    <div class="stat-card">
+      <div class="stat-icon morado"><i class="bi bi-people"></i></div>
+      <div>
+        <div class="stat-num" style="font-size:1.2rem">Bs {{ cuentas_por_cobrar|floatformat:0 }}</div>
+        <div class="stat-label">Por cobrar</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-sm-6 col-xl-3">
+    <div class="stat-card">
+      <div class="stat-icon rojo"><i class="bi bi-credit-card"></i></div>
+      <div>
+        <div class="stat-num" style="font-size:1.2rem">Bs {{ cuentas_por_pagar|floatformat:0 }}</div>
+        <div class="stat-label">Por pagar</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-sm-6 col-xl-3">
+    <div class="stat-card">
+      <div class="stat-icon rojo"><i class="bi bi-alarm"></i></div>
+      <div>
+        <div class="stat-num">{{ creditos_vencidos }}</div>
+        <div class="stat-label">Créditos vencidos</div>
+        {% if creditos_vencidos > 0 %}
+        <span class="stat-delta delta-danger">Acción requerida</span>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+</div>
+
+{# ── Fila 3: Gráficas ── #}
+<div class="row g-3 mb-3">
+
+  {# Chart: Ventas últimos 7 días #}
+  <div class="col-xl-8">
+    <div class="chart-card h-100">
+      <div class="chart-title"><i class="bi bi-graph-up me-1"></i>Ventas — últimos 7 días (Bs.)</div>
+      <canvas id="chartVentas" height="100"></canvas>
+    </div>
+  </div>
+
+  {# Chart: Compras por estado #}
+  <div class="col-xl-4">
+    <div class="chart-card h-100">
+      <div class="chart-title"><i class="bi bi-pie-chart me-1"></i>Estado de compras</div>
+      <canvas id="chartCompras" height="180"></canvas>
+    </div>
+  </div>
+
+</div>
+
+{# ── Fila 4: Stock crítico + Actividad reciente ── #}
+<div class="row g-3 mb-3">
+
+  {# Chart: Stock crítico #}
+  <div class="col-xl-6">
+    <div class="chart-card">
+      <div class="chart-title"><i class="bi bi-bar-chart-horizontal me-1"></i>Top productos con stock crítico</div>
+      {% if chart_criticos_nombres != '[]' %}
+      <canvas id="chartStock" height="160"></canvas>
+      {% else %}
+      <div class="empty-chart">
+        <i class="bi bi-check-circle text-success fs-3 mb-2"></i>
+        Ningún producto en niveles críticos
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  {# Actividad reciente #}
+  <div class="col-xl-6">
+    <div class="chart-card">
+      <div class="chart-title"><i class="bi bi-clock-history me-1"></i>Actividad reciente</div>
+      {% if actividad_reciente %}
+      {% for log in actividad_reciente %}
+      <div class="activity-item">
+        <div class="activity-icon"><i class="bi bi-activity"></i></div>
+        <div style="flex:1;min-width:0">
+          <div class="activity-desc">{{ log.descripcion|truncatechars:60 }}</div>
+          <div class="d-flex gap-2 mt-1">
+            <span class="activity-user">{{ log.usuario.get_nombre_completo }}</span>
+            <span class="activity-time">{{ log.fecha_hora|date:"d/m H:i" }}</span>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+      {% else %}
+      <div class="empty-chart">
+        <i class="bi bi-inbox fs-3 mb-2"></i>
+        Sin actividad registrada aún
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+</div>
+
+{% endif %}{# /puede_ver_financiero #}
+
+{# ── Stock bajo (tabla, siempre visible si hay) ── #}
+{% if productos_bajo %}
+<div class="card">
+  <div class="card-header d-flex align-items-center gap-2">
+    <i class="bi bi-exclamation-triangle text-danger"></i>
+    Productos con stock bajo — acción recomendada
+  </div>
+  <div class="card-body p-0">
+    <table class="table table-hover mb-0">
+      <thead>
+        <tr>
+          <th>Código</th>
+          <th>Producto</th>
+          <th class="text-center">Stock actual</th>
+          <th class="text-center">Mínimo</th>
+          <th class="text-center">Sugerido pedir</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in productos_bajo %}
+        <tr>
+          <td><code>{{ p.codigo }}</code></td>
+          <td>{{ p.nombre }}</td>
+          <td class="text-center"><span class="badge bg-danger">{{ p.stock_actual }}</span></td>
+          <td class="text-center text-muted">{{ p.stock_minimo }}</td>
+          <td class="text-center"><strong>{{ p.cantidad_sugerida_pedido }}</strong> unid.</td>
+          <td>
+            <a href="{% url 'compras:crear_compra' %}?producto={{ p.pk }}"
+               class="btn btn-sm btn-primary">
+              <i class="bi bi-plus me-1"></i>Crear orden
+            </a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block extra_js %}
+{% if puede_ver_financiero %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+Chart.defaults.font.family = "'Inter', 'Segoe UI', sans-serif";
+Chart.defaults.font.size   = 12;
+
+// ── Chart 1: Ventas 7 días ─────────────────────────
+const labels7d  = JSON.parse('{{ chart_labels_7d|safe }}');
+const ventas7d  = JSON.parse('{{ chart_ventas_7d|safe }}');
+const ctxV = document.getElementById('chartVentas');
+if (ctxV) {
+  const gradV = ctxV.getContext('2d').createLinearGradient(0, 0, 0, 260);
+  gradV.addColorStop(0, 'rgba(26,86,219,.25)');
+  gradV.addColorStop(1, 'rgba(26,86,219,0)');
+  new Chart(ctxV, {
+    type: 'line',
+    data: {
+      labels: labels7d,
+      datasets: [{
+        label: 'Ventas (Bs.)',
+        data: ventas7d,
+        borderColor: '#1a56db',
+        backgroundColor: gradV,
+        borderWidth: 2.5,
+        pointRadius: 4,
+        pointBackgroundColor: '#1a56db',
+        tension: 0.4,
+        fill: true,
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: false } },
+      scales: {
+        y: {
+          beginAtZero: true,
+          grid: { color: '#f3f4f6' },
+          ticks: { callback: v => 'Bs ' + v.toLocaleString() }
+        },
+        x: { grid: { display: false } }
+      }
+    }
+  });
+}
+
+// ── Chart 2: Compras por estado ─────────────────────
+const estadoLabels  = JSON.parse('{{ chart_estado_labels|safe }}');
+const estadoValores = JSON.parse('{{ chart_estado_valores|safe }}');
+const ctxC = document.getElementById('chartCompras');
+if (ctxC) {
+  new Chart(ctxC, {
+    type: 'doughnut',
+    data: {
+      labels: estadoLabels,
+      datasets: [{
+        data: estadoValores,
+        backgroundColor: ['#fbbf24','#1a56db','#10b981','#ef4444','#6b7280'],
+        borderWidth: 2,
+        borderColor: '#fff',
+        hoverOffset: 6,
+      }]
+    },
+    options: {
+      responsive: true,
+      cutout: '60%',
+      plugins: {
+        legend: {
+          position: 'bottom',
+          labels: { padding: 12, usePointStyle: true, pointStyleWidth: 8 }
+        }
+      }
+    }
+  });
+}
+
+// ── Chart 3: Stock crítico ──────────────────────────
+const stockNombres = JSON.parse('{{ chart_criticos_nombres|safe }}');
+const stockActual  = JSON.parse('{{ chart_criticos_stock|safe }}');
+const stockMinimo  = JSON.parse('{{ chart_criticos_minimo|safe }}');
+const ctxS = document.getElementById('chartStock');
+if (ctxS && stockNombres.length) {
+  new Chart(ctxS, {
+    type: 'bar',
+    data: {
+      labels: stockNombres,
+      datasets: [
+        {
+          label: 'Stock actual',
+          data: stockActual,
+          backgroundColor: '#ef4444',
+          borderRadius: 4,
+        },
+        {
+          label: 'Mínimo requerido',
+          data: stockMinimo,
+          backgroundColor: '#fca5a5',
+          borderRadius: 4,
+        }
+      ]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      plugins: {
+        legend: {
+          position: 'bottom',
+          labels: { usePointStyle: true, pointStyleWidth: 8, padding: 10 }
+        }
+      },
+      scales: {
+        x: { beginAtZero: true, grid: { color: '#f3f4f6' } },
+        y: { grid: { display: false } }
+      }
+    }
+  });
+}
+</script>
+{% endif %}
+{% endblock %}

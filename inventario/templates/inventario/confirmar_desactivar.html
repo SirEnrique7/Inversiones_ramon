@@ -1,0 +1,33 @@
+{% extends 'inventario/base.html' %}
+{% block titulo %}Desactivar producto{% endblock %}
+{% block topbar_titulo %}Desactivar producto{% endblock %}
+
+{% block contenido %}
+<div class="row justify-content-center">
+  <div class="col-lg-5">
+    <div class="card border-warning">
+      <div class="card-header text-warning">
+        <i class="bi bi-box-seam me-2"></i>Confirmar desactivación
+      </div>
+      <div class="card-body">
+        <p>Estás a punto de desactivar el producto:</p>
+        <h5>{{ producto.nombre }}</h5>
+        <p class="text-muted small">
+          Código: <code>{{ producto.codigo|default:"—" }}</code> &nbsp;|&nbsp;
+          Stock actual: <strong>{{ producto.stock_actual }}</strong> unid.
+        </p>
+        <div class="alert alert-warning">
+          <i class="bi bi-info-circle me-1"></i>
+          El producto <strong>dejará de aparecer</strong> en listas y formularios de venta/compra,
+          pero su historial de movimientos se conservará intacto.
+        </div>
+        <form method="post" class="d-flex gap-2 mt-3">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-warning">Desactivar</button>
+          <a href="{% url 'inventario:detalle_producto' producto.pk %}" class="btn btn-outline-secondary">Cancelar</a>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

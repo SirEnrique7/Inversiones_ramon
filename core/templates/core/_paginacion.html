@@ -1,0 +1,43 @@
+{% if page_obj.has_other_pages %}
+<div class="d-flex align-items-center justify-content-between mt-3 px-1">
+  <small class="text-muted">
+    Mostrando <strong>{{ page_obj.start_index }}–{{ page_obj.end_index }}</strong>
+    de <strong>{{ page_obj.paginator.count }}</strong> registros
+  </small>
+  <nav aria-label="Paginación">
+    <ul class="pagination pagination-sm mb-0">
+
+      <li class="page-item {% if not page_obj.has_previous %}disabled{% endif %}">
+        <a class="page-link" href="?{% if filter_params %}{{ filter_params }}&{% endif %}page=1" title="Primera">
+          <i class="bi bi-chevron-double-left"></i>
+        </a>
+      </li>
+
+      <li class="page-item {% if not page_obj.has_previous %}disabled{% endif %}">
+        <a class="page-link" href="{% if page_obj.has_previous %}?{% if filter_params %}{{ filter_params }}&{% endif %}page={{ page_obj.previous_page_number }}{% else %}#{% endif %}" title="Anterior">
+          <i class="bi bi-chevron-left"></i>
+        </a>
+      </li>
+
+      <li class="page-item active">
+        <span class="page-link" style="min-width:6rem;text-align:center">
+          Pág. {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}
+        </span>
+      </li>
+
+      <li class="page-item {% if not page_obj.has_next %}disabled{% endif %}">
+        <a class="page-link" href="{% if page_obj.has_next %}?{% if filter_params %}{{ filter_params }}&{% endif %}page={{ page_obj.next_page_number }}{% else %}#{% endif %}" title="Siguiente">
+          <i class="bi bi-chevron-right"></i>
+        </a>
+      </li>
+
+      <li class="page-item {% if not page_obj.has_next %}disabled{% endif %}">
+        <a class="page-link" href="?{% if filter_params %}{{ filter_params }}&{% endif %}page={{ page_obj.paginator.num_pages }}" title="Última">
+          <i class="bi bi-chevron-double-right"></i>
+        </a>
+      </li>
+
+    </ul>
+  </nav>
+</div>
+{% endif %}

@@ -1,0 +1,93 @@
+{% extends 'inventario/base.html' %}
+{% block titulo %}Responder solicitud #{{ solicitud.id }} — Inversiones Ramón{% endblock %}
+{% block topbar_titulo %}Responder solicitud{% endblock %}
+
+{% block contenido %}
+<div class="row justify-content-center">
+  <div class="col-lg-6">
+
+    <div class="card mb-3">
+      <div class="card-header">Detalle de la solicitud #{{ solicitud.id }}</div>
+      <div class="card-body">
+        <div class="row g-2">
+          <div class="col-6">
+            <div class="text-muted" style="font-size:.8rem">Empleado</div>
+            <div>{{ solicitud.empleado.get_full_name|default:solicitud.empleado.username }}</div>
+          </div>
+          <div class="col-6">
+            <div class="text-muted" style="font-size:.8rem">Fecha</div>
+            <div>{{ solicitud.fecha_solicitud|date:"d/m/Y H:i" }}</div>
+          </div>
+          <div class="col-6">
+            <div class="text-muted" style="font-size:.8rem">Producto</div>
+            <div><strong>{{ solicitud.producto.nombre }}</strong> <code>{{ solicitud.producto.codigo }}</code></div>
+          </div>
+          <div class="col-6">
+            <div class="text-muted" style="font-size:.8rem">Cantidad solicitada</div>
+            <div class="fs-5 fw-bold">{{ solicitud.cantidad_solicitada }}</div>
+          </div>
+          <div class="col-12">
+            <div class="text-muted" style="font-size:.8rem">Stock actual del producto</div>
+            <span class="badge {% if solicitud.producto.stock_bajo %}bg-danger{% else %}bg-success{% endif %}">
+              {{ solicitud.producto.stock_actual }} unidades
+            </span>
+          </div>
+          {% if solicitud.observacion %}
+          <div class="col-12">
+            <div class="text-muted" style="font-size:.8rem">Observación del empleado</div>
+            <div class="p-2 bg-light rounded text-secondary small">{{ solicitud.observacion }}</div>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">Tu decisión</div>
+      <div class="card-body">
+        <form method="post">
+          {% csrf_token %}
+          
+          {% if form.non_field_errors %}
+          <div class="alert alert-danger py-2 small mb-3">
+            {% for error in form.non_field_errors %}
+              <i class="bi bi-exclamation-circle me-1"></i> {{ error }}
+            {% endfor %}
+          </div>
+          {% endif %}
+
+          <div class="mb-3">
+            <div class="d-flex gap-3">
+              {% for radio in form.decision %}
+              <div class="form-check">
+                {{ radio.tag }}
+                <label class="form-check-label fw-semibold" for="{{ radio.id_for_label }}">
+                  {{ radio.choice_label }}
+                </label>
+              </div>
+              {% endfor %}
+            </div>
+            {% if form.decision.errors %}
+            <div class="text-danger small mt-1">{{ form.decision.errors }}</div>
+            {% endif %}
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-semibold">{{ form.observacion.label }}</label>
+            {{ form.observacion }}
+            {% if form.observacion.errors %}
+            <div class="text-danger small mt-1">{{ form.observacion.errors }}</div>
+            {% endif %}
+          </div>
+
+          <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-primary">Confirmar decisión</button>
+            <a href="{% url 'inventario:lista_solicitudes' %}" class="btn btn-outline-secondary">Cancelar</a>
+          </div>
+        </form>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

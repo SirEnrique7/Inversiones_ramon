@@ -1,0 +1,80 @@
+{% extends 'core/base.html' %}
+{% block titulo %}Personal — Inversiones Ramón{% endblock %}
+{% block topbar_titulo %}Gestión de personal{% endblock %}
+
+{% block topbar_acciones %}
+<a href="{% url 'core:crear_usuario' %}" class="btn btn-sm btn-primary">
+  <i class="bi bi-person-plus me-1"></i>Nuevo usuario
+</a>
+{% endblock %}
+
+{% block contenido %}
+<div class="card">
+  <div class="card-body p-0">
+    <table class="table table-hover mb-0">
+      <thead>
+        <tr>
+          <th>Nombre</th>
+          <th>Cédula</th>
+          <th>Correo</th>
+          <th>Teléfono</th>
+          <th>Rol</th>
+          <th>Estado</th>
+          <th>Ingreso</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for u in usuarios %}
+        <tr {% if not u.is_active %}style="opacity:.6"{% endif %}>
+          <td>
+            <strong>{{ u.get_nombre_completo }}</strong>
+            <div class="text-muted" style="font-size:.75rem">@{{ u.username }}</div>
+          </td>
+          <td>{{ u.cedula }}</td>
+          <td>{{ u.email }}</td>
+          <td>{{ u.telefono|default:"—" }}</td>
+          <td>
+            <span class="badge {% if u.es_admin %}bg-primary{% else %}bg-secondary{% endif %}">
+              {{ u.get_rol_display }}
+            </span>
+          </td>
+          <td>
+            {% if u.is_active %}
+              <span class="badge bg-success-subtle text-success">Activo</span>
+            {% else %}
+              <span class="badge bg-secondary-subtle text-secondary">Inactivo</span>
+              {% if u.fecha_baja %}
+              <div style="font-size:.7rem;color:#9ca3af">{{ u.fecha_baja|date:"d/m/Y" }}</div>
+              {% endif %}
+            {% endif %}
+          </td>
+          <td>{{ u.fecha_ingreso|date:"d/m/Y" }}</td>
+          <td class="text-end">
+            <a href="{% url 'core:editar_usuario' u.pk %}" class="btn btn-sm btn-outline-primary">
+              <i class="bi bi-pencil"></i>
+            </a>
+            {% if u != request.user %}
+              {% if u.is_active %}
+              <a href="{% url 'core:dar_de_baja' u.pk %}" class="btn btn-sm btn-outline-danger">
+                <i class="bi bi-person-x"></i>
+              </a>
+              {% else %}
+              <a href="{% url 'core:reactivar_usuario' u.pk %}" class="btn btn-sm btn-outline-success">
+                <i class="bi bi-person-check"></i>
+              </a>
+              {% endif %}
+            {% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="8" class="text-center text-muted py-4">Sin usuarios registrados.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="card-body pt-0">
+    {% include 'core/_paginacion.html' %}
+  </div>
+</div>
+{% endblock %}

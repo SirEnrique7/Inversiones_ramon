@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block titulo %}Inversiones Ramón{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/animate.css@4.1.1/animate.min.css" rel="stylesheet">
+  <style>
+    :root {
+      --azul:          #1a56db;
+      --azul-dark:     #1344b8;
+      --azul-light:    #eff6ff;
+      --sidebar-w:     252px;
+      --sidebar-bg:    #0f172a;
+      --sidebar-txt:   #94a3b8;
+      --sidebar-hover: #1e293b;
+      --sidebar-active:#1a56db;
+      --gris-bg:       #f1f5f9;
+      --card-border:   #e2e8f0;
+      --text-primary:  #0f172a;
+      --text-muted:    #64748b;
+    }
+    *, *::before, *::after { box-sizing: border-box; }
+    body { background: var(--gris-bg); font-family: 'Inter', 'Segoe UI', sans-serif;
+           font-size: .875rem; color: var(--text-primary); margin: 0; }
+
+    /* ── Sidebar ── */
+    #sidebar {
+      position: fixed; top: 0; left: 0;
+      width: var(--sidebar-w); height: 100vh;
+      background: var(--sidebar-bg);
+      display: flex; flex-direction: column;
+      z-index: 100; overflow-y: auto;
+      scrollbar-width: thin; scrollbar-color: #334155 transparent;
+    }
+    #sidebar::-webkit-scrollbar { width: 4px; }
+    #sidebar::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+
+    .sidebar-brand {
+      padding: 1.25rem 1.25rem .9rem;
+      font-size: .72rem; font-weight: 700; letter-spacing: .14em;
+      color: #fff; text-transform: uppercase;
+      border-bottom: 1px solid #1e293b;
+      display: flex; align-items: center; gap: .6rem;
+    }
+    .sidebar-brand-logo {
+      width: 28px; height: 28px; background: var(--azul);
+      border-radius: 7px; display: flex; align-items: center;
+      justify-content: center; font-size: .9rem; color: #fff; flex-shrink: 0;
+    }
+    .sidebar-brand span { color: #7dd3fc; }
+
+    .nav-section {
+      padding: .6rem 1.25rem .2rem;
+      font-size: .6rem; font-weight: 700; letter-spacing: .12em;
+      color: #475569; text-transform: uppercase;
+    }
+    .sidebar-link {
+      display: flex; align-items: center; gap: .6rem;
+      padding: .5rem 1.25rem; color: var(--sidebar-txt);
+      text-decoration: none; font-size: .82rem; font-weight: 500;
+      transition: background .15s, color .15s, padding-left .15s;
+      border-left: 3px solid transparent;
+    }
+    .sidebar-link:hover  { background: var(--sidebar-hover); color: #e2e8f0;
+                           padding-left: 1.45rem; }
+    .sidebar-link.active { background: rgba(26,86,219,.15); color: #93c5fd;
+                           border-left-color: var(--azul); font-weight: 600; }
+    .sidebar-link i      { font-size: .95rem; width: 1.1rem; text-align: center; flex-shrink: 0; }
+
+    .tasa-pill {
+      margin: .5rem .9rem; padding: .35rem .75rem;
+      background: rgba(26,86,219,.12); border-radius: 6px;
+      font-size: .72rem; color: #7dd3fc;
+      display: flex; align-items: center; gap: .4rem;
+    }
+
+    .sidebar-footer {
+      margin-top: auto; padding: .9rem 1.25rem;
+      border-top: 1px solid #1e293b;
+    }
+    .badge-rol {
+      font-size: .6rem; font-weight: 700; padding: .2rem .5rem;
+      border-radius: 5px; background: rgba(26,86,219,.25);
+      color: #93c5fd; text-transform: uppercase; letter-spacing: .05em;
+    }
+
+    /* ── Main ── */
+    #main { margin-left: var(--sidebar-w); min-height: 100vh; }
+
+    .topbar {
+      background: #fff; border-bottom: 1px solid var(--card-border);
+      padding: .7rem 1.5rem;
+      display: flex; align-items: center; justify-content: space-between;
+      position: sticky; top: 0; z-index: 50;
+      box-shadow: 0 1px 3px rgba(0,0,0,.04);
+    }
+    .topbar-title { font-weight: 700; font-size: .95rem; color: var(--text-primary); }
+
+    .page-body { padding: 1.5rem; }
+
+    /* ── Cards ── */
+    .card {
+      border: 1px solid var(--card-border); border-radius: 12px;
+      box-shadow: 0 1px 4px rgba(0,0,0,.04);
+    }
+    .card-header {
+      background: #fff; border-bottom: 1px solid var(--card-border);
+      font-weight: 600; font-size: .875rem; border-radius: 12px 12px 0 0 !important;
+      padding: .85rem 1.25rem;
+    }
+    .card-body { padding: 1.25rem; }
+
+    /* ── Stat cards ── */
+    .stat-card {
+      background: #fff; border: 1px solid var(--card-border);
+      border-radius: 12px; padding: 1.25rem;
+      display: flex; align-items: center; gap: 1rem;
+      box-shadow: 0 1px 4px rgba(0,0,0,.04);
+      transition: box-shadow .2s, transform .2s;
+    }
+    .stat-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,.08); transform: translateY(-1px); }
+    .stat-icon {
+      width: 46px; height: 46px; border-radius: 10px;
+      display: flex; align-items: center; justify-content: center; font-size: 1.3rem;
+      flex-shrink: 0;
+    }
+    .stat-icon.azul   { background: #eff6ff; color: var(--azul); }
+    .stat-icon.verde  { background: #f0fdf4; color: #16a34a; }
+    .stat-icon.rojo   { background: #fff1f2; color: #e11d48; }
+    .stat-icon.naranja{ background: #fff7ed; color: #ea580c; }
+    .stat-icon.morado { background: #faf5ff; color: #7c3aed; }
+    .stat-num   { font-size: 1.55rem; font-weight: 700; color: var(--text-primary); line-height: 1.1; }
+    .stat-label { font-size: .75rem; color: var(--text-muted); margin-top: .1rem; }
+
+    /* ── Botones ── */
+    .btn-primary { background: var(--azul); border-color: var(--azul);
+                   font-weight: 500; transition: background .15s, transform .1s; }
+    .btn-primary:hover { background: var(--azul-dark); border-color: var(--azul-dark);
+                         transform: translateY(-1px); }
+    .btn { border-radius: 7px; font-size: .83rem; }
+
+    /* ── Tablas ── */
+    .table th {
+      font-size: .72rem; font-weight: 600; color: var(--text-muted);
+      text-transform: uppercase; letter-spacing: .06em;
+      background: #f8fafc; border-bottom: 1px solid var(--card-border);
+    }
+    .table td { vertical-align: middle; font-size: .85rem; }
+    .table-hover tbody tr:hover { background: #f8fafc; }
+
+    /* ── Forms ── */
+    .form-control, .form-select {
+      border-radius: 8px; border-color: var(--card-border);
+      font-size: .875rem; transition: border-color .15s, box-shadow .15s;
+    }
+    .form-control:focus, .form-select:focus {
+      border-color: var(--azul); box-shadow: 0 0 0 3px rgba(26,86,219,.12);
+    }
+    .form-label { font-size: .82rem; font-weight: 600; color: #374151; margin-bottom: .4rem; }
+
+    /* ── Badges ── */
+    .badge { font-weight: 600; border-radius: 6px; letter-spacing: .02em; }
+
+    /* ── Alertas ── */
+    .alert { border-radius: 10px; font-size: .875rem; border: none;
+             box-shadow: 0 1px 4px rgba(0,0,0,.06); }
+    .alert-success { background: #f0fdf4; color: #166534; }
+    .alert-danger   { background: #fef2f2; color: #991b1b; }
+    .alert-warning  { background: #fffbeb; color: #92400e; }
+    .alert-info     { background: #eff6ff; color: #1e40af; }
+
+    /* ── Paginación ── */
+    .pagination .page-link { border-radius: 7px !important; margin: 0 2px;
+                              font-size: .82rem; border-color: var(--card-border);
+                              color: var(--azul); }
+    .pagination .page-item.active .page-link { background: var(--azul);
+                                                border-color: var(--azul); }
+  </style>
+  {% block extra_css %}{% endblock %}
+</head>
+
+<body>
+<nav id="sidebar">
+  <div class="sidebar-brand">
+    <div class="sidebar-brand-logo"><i class="bi bi-box-seam"></i></div>
+    <div>Inv. <span>Ramón</span><div style="opacity:.4;font-size:.55rem;letter-spacing:.06em">Sistema de gestión</div></div>
+  </div>
+
+  {% if tasa_bcv %}
+  <div class="tasa-pill">
+    <i class="bi bi-currency-exchange me-1"></i>
+    BCV hoy: <strong>Bs. {{ tasa_bcv.tasa_bs_usd|default_if_none:"—" }}</strong>
+  </div>
+  {% endif %}
+
+  <div class="mt-1">
+    <div class="nav-section">Principal</div>
+    <a href="{% url 'core:dashboard' %}" class="sidebar-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+      <i class="bi bi-grid-1x2"></i> Dashboard
+    </a>
+
+    <div class="nav-section mt-1">Inventario</div>
+    <a href="{% url 'inventario:lista_productos' %}" class="sidebar-link {% if 'producto' in request.resolver_match.url_name %}active{% endif %}">
+      <i class="bi bi-box-seam"></i> Productos
+    </a>
+    <a href="{% url 'inventario:lista_solicitudes' %}" class="sidebar-link {% if 'solicitud' in request.resolver_match.url_name %}active{% endif %}">
+      <i class="bi bi-send"></i> Solicitudes
+    </a>
+
+    <div class="nav-section mt-1">Compras</div>
+    <a href="{% url 'compras:lista_compras' %}" class="sidebar-link {% if 'compra' in request.resolver_match.url_name %}active{% endif %}">
+      <i class="bi bi-cart3"></i> Órdenes de compra
+    </a>
+    {% if user.es_admin %}
+    <a href="{% url 'core:lista_cuentas_pagar' %}" class="sidebar-link {% if 'pagar' in request.resolver_match.url_name %}active{% endif %}">
+      <i class="bi bi-credit-card"></i> Cuentas por pagar
+    </a>
+    {% endif %}
+
+    <div class="nav-section mt-1">Ventas</div>
+    <a href="{% url 'ventas:lista_ventas' %}" class="sidebar-link {% if 'venta' in request.resolver_match.url_name %}active{% endif %}">
+      <i class="bi bi-receipt"></i> Ventas
+    </a>
+    {% if user.es_admin %}
+    <a href="{% url 'core:lista_cuentas_cobrar' %}" class="sidebar-link {% if 'cobrar' in request.resolver_match.url_name %}active{% endif %}">
+      <i class="bi bi-cash-stack"></i> Cuentas por cobrar
+    </a>
+    {% endif %}
+
+    {% if user.es_admin %}
+    <div class="nav-section mt-1">Administración</div>
+    <a href="{% url 'inventario:lista_categorias' %}" class="sidebar-link {% if 'categoria' in request.resolver_match.url_name %}active{% endif %}">
+      <i class="bi bi-tags"></i> Categorías
+    </a>
+    <a href="{% url 'inventario:lista_proveedores' %}" class="sidebar-link {% if 'proveedor' in request.resolver_match.url_name %}active{% endif %}">
+      <i class="bi bi-truck"></i> Proveedores
+    </a>
+    <a href="{% url 'core:lista_usuarios' %}" class="sidebar-link {% if 'usuario' in request.resolver_match.url_name %}active{% endif %}">
+      <i class="bi bi-people"></i> Personal
+    </a>
+    <a href="{% url 'reportes:index' %}" class="sidebar-link {% if 'reporte' in request.resolver_match.url_name %}active{% endif %}">
+      <i class="bi bi-bar-chart-line"></i> Reportes
+    </a>
+    <a href="{% url 'core:auditoria' %}" class="sidebar-link {% if 'auditoria' in request.resolver_match.url_name %}active{% endif %}">
+      <i class="bi bi-shield-check"></i> Auditoría
+    </a>
+    {% endif %}
+  </div>
+
+  <div class="sidebar-footer">
+    <div class="d-flex align-items-center gap-2 mb-2">
+      <i class="bi bi-person-circle fs-4 text-slate-400"></i>
+      <div>
+        <div style="font-size:.8rem; color:#e2e8f0; font-weight:600">
+          {{ user.get_nombre_completo }}
+        </div>
+        <span class="badge-rol">{{ user.get_rol_display }}</span>
+      </div>
+    </div>
+    <a href="{% url 'core:logout' %}" class="sidebar-link px-0" style="color:#f87171">
+      <i class="bi bi-box-arrow-left"></i> Cerrar sesión
+    </a>
+  </div>
+</nav>
+
+<div id="main">
+  <div class="topbar">
+    <span class="topbar-title">{% block topbar_titulo %}{% endblock %}</span>
+    <div class="d-flex align-items-center gap-2">
+      {% block topbar_acciones %}{% endblock %}
+    </div>
+  </div>
+
+  <div class="page-body">
+    {% for msg in messages %}
+    <div class="alert alert-{{ msg.tags }} alert-dismissible fade show" role="alert">
+      {{ msg }}
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    {% endfor %}
+
+    {% block contenido %}{% endblock %}
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

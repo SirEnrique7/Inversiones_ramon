@@ -1,0 +1,201 @@
+{% extends 'core/base.html' %}
+{% block titulo %}Registrar recepción — {{ compra.numero_referencia }}{% endblock %}
+{% block topbar_titulo %}Registrar recepción de mercancía{% endblock %}
+
+{% block extra_css %}
+<style>
+  #fecha-venc-wrapper { display: none; }
+  .tabla-recepcion th, .tabla-recepcion td { vertical-align: middle; }
+</style>
+{% endblock %}
+
+{% block contenido %}
+<form method="post" id="form-recepcion-mercancia" novalidate>
+  {% csrf_token %}
+  {{ formset.management_form }}
+
+  <div class="row g-3 animate__animated animate__fadeIn">
+
+    <div class="col-lg-4">
+      <div class="card shadow-sm border-start border-4 border-primary">
+        <div class="card-header fw-bold bg-light">Datos de recepción y pago</div>
+        <div class="card-body">
+
+          <div class="mb-3">
+            <label class="form-label fw-semibold">{{ form_recepcion.referencia_documento.label }}
+              <span class="text-danger">*</span>
+            </label>
+            {{ form_recepcion.referencia_documento }}
+            <div class="form-text small text-muted">Nro. de factura, nota de entrega o guía de despacho del proveedor.</div>
+            {% if form_recepcion.referencia_documento.errors %}
+            <div class="text-danger small mt-1">
+              <i class="bi bi-exclamation-circle-fill me-1"></i>{{ form_recepcion.referencia_documento.errors.as_text }}
+            </div>
+            {% endif %}
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-semibold">{{ form_recepcion.fecha_recepcion.label }}</label>
+            {{ form_recepcion.fecha_recepcion }}
+            {% if form_recepcion.fecha_recepcion.errors %}
+            <div class="text-danger small mt-1"><i class="bi bi-calendar-x-fill me-1"></i>{{ form_recepcion.fecha_recepcion.errors.as_text }}</div>
+            {% endif %}
+          </div>
+
+          <hr class="text-muted opacity-25">
+
+          <div class="mb-3">
+            <label class="form-label fw-semibold">{{ form_recepcion.modalidad_pago.label }}</label>
+            {{ form_recepcion.modalidad_pago }}
+          </div>
+
+          <div class="mb-3" id="fecha-venc-wrapper">
+            <label class="form-label fw-semibold text-primary">{{ form_recepcion.fecha_vencimiento.label }} <span class="text-danger">*</span></label>
+            {{ form_recepcion.fecha_vencimiento }}
+            {% if form_recepcion.fecha_vencimiento.errors %}
+            <div class="text-danger small mt-1"><i class="bi bi-calendar-x-fill me-1"></i>{{ form_recepcion.fecha_vencimiento.errors.as_text }}</div>
+            {% endif %}
+          </div>
+
+          {% if form_recepcion.non_field_errors or formset.non_field_errors %}
+          <div class="alert alert-danger py-2 small">
+            {% for error in form_recepcion.non_field_errors %}<div><i class="bi bi-exclamation-triangle-fill me-1"></i> {{ error }}</div>{% endfor %}
+            {% for error in formset.non_field_errors %}<div><i class="bi bi-exclamation-octagon-fill me-1"></i> {{ error }}</div>{% endfor %}
+          </div>
+          {% endif %}
+
+          <div class="alert alert-info py-2 mb-0" style="font-size:.82rem">
+            <i class="bi bi-info-circle-fill me-1 text-primary"></i>
+            <strong>Contado:</strong> Libera la transacción y se asume liquidada.<br>
+            <strong>Crédito:</strong> Genera pasivo automático en Cuentas por Pagar.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-8">
+      <div class="card shadow-sm">
+        <div class="card-header fw-bold bg-light d-flex justify-content-between align-items-center">
+          Verificación física de cantidades
+          <span class="badge bg-secondary">Orden: {{ compra.numero_referencia }}</span>
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-hover tabla-recepcion align-middle mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th>Producto</th>
+                  <th class="text-center" style="width: 100px;">Pedido</th>
+                  <th class="text-center" style="width: 140px;">Recibido</th>
+                  <th class="text-center" style="width: 120px;">Diferencia</th>
+                  <th class="text-end" style="width: 130px;">Precio unit.</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for f, d in formset_detalle %}
+                <tr>
+                  <td>
+                    {{ f.id }}
+                    <span class="fw-semibold text-dark">{{ d.producto.nombre }}</span>
+                    <div class="text-muted" style="font-size:.75rem"><code>{{ d.producto.codigo }}</code></div>
+                  </td>
+                  <td class="text-center fw-bold text-secondary target-pedido">{{ d.cantidad_pedida }}</td>
+                  <td class="text-center">
+                    <div class="px-1 js-input-container">
+                      {{ f.cantidad_recibida }}
+                    </div>
+                    {% if f.cantidad_recibida.errors %}
+                    <div class="text-danger mt-1" style="font-size: 0.7rem; font-weight: 600;">
+                      <i class="bi bi-x-circle-fill"></i> {{ f.cantidad_recibida.errors.as_text }}
+                    </div>
+                    {% endif %}
+                  </td>
+                  <td class="text-center fw-bold js-diff-cell" style="font-size: 0.9rem;">—</td>
+                  <td class="text-end text-muted fw-mono">Bs. {{ d.precio_unitario|floatformat:2 }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="d-flex gap-2 mt-3 justify-content-end">
+        <a href="{% url 'compras:detalle_compra' compra.pk %}" class="btn btn-outline-secondary px-4">
+          Cancelar
+        </a>
+        <button type="submit" class="btn btn-primary px-4">
+          <i class="bi bi-box-arrow-in-down me-1"></i>Confirmar registro de ingreso
+        </button>
+      </div>
+    </div>
+
+  </div>
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Manejo dinámico de Modalidad de Pago
+  const modalidadSel = document.getElementById('id_modalidad_pago') || document.querySelector('[id$="-modalidad_pago"]');
+  const vencWrapper   = document.getElementById('fecha-venc-wrapper');
+  const fechaVencInput = vencWrapper?.querySelector('input');
+  
+  function toggleVenc() {
+    if (modalidadSel && vencWrapper) {
+      if (modalidadSel.value === 'credito') {
+        vencWrapper.style.display = 'block';
+        fechaVencInput?.setAttribute('required', 'required');
+      } else {
+        vencWrapper.style.display = 'none';
+        fechaVencInput?.removeAttribute('required');
+      }
+    }
+  }
+  
+  modalidadSel?.addEventListener('change', toggleVenc);
+  toggleVenc();
+
+  // RECTIFICACIÓN UI: Normalizar los inputs autogenerados por Django para que se integren fluidamente a Bootstrap 5
+  document.querySelectorAll('.js-input-container input').forEach(input => {
+    input.classList.add('form-control', 'form-control-sm', 'text-center', 'fw-bold');
+  });
+
+  // Cálculo matemático y semántico de diferencias en tiempo real
+  document.querySelectorAll('[name$="-cantidad_recibida"]').forEach((input) => {
+    const fila = input.closest('tr');
+    if (!fila) return;
+    
+    const pedidoCel = fila.querySelector('.target-pedido');
+    const diffCel   = fila.querySelector('.js-diff-cell');
+
+    function actualizarDiff() {
+      const pedido   = parseInt(pedidoCel?.textContent) || 0;
+      const recibido = parseInt(input.value) || 0;
+      const diff     = recibido - pedido;
+      
+      if (diffCel) {
+        // Limpieza total de clases previas de Bootstrap para evitar colisiones visuales
+        diffCel.className = 'text-center fw-bold js-diff-cell';
+        
+        if (diff === 0) {
+          diffCel.textContent = '✓';
+          diffCel.classList.add('text-success', 'bg-success-subtle', 'rounded-2');
+        } else if (diff < 0) {
+          diffCel.textContent = diff;
+          diffCel.classList.add('text-danger', 'bg-danger-subtle', 'rounded-2');
+        } else {
+          // Excedentes de mercancía (Sobre-recepción)
+          diffCel.textContent = `+${diff}`;
+          diffCel.classList.add('text-warning-emphasis', 'bg-warning-subtle', 'rounded-2');
+        }
+      }
+    }
+    
+    input.addEventListener('input', actualizarDiff);
+    actualizarDiff(); 
+  });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,65 @@
+{% extends 'core/base.html' %}
+{% block titulo %}Auditoría{% endblock %}
+{% block topbar_titulo %}Registro de auditoría{% endblock %}
+{% block contenido %}
+<div class="card shadow-sm">
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th class="ps-3" style="width: 15%">Fecha</th>
+            <th style="width: 15%">Usuario</th>
+            <th style="width: 15%">Acción</th>
+            <th style="width: 40%">Descripción</th>
+            <th class="pe-3" style="width: 15%">IP</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for log in logs %}
+          <tr>
+            <td class="ps-3 text-secondary" style="white-space:nowrap;">
+              {{ log.fecha|date:"d/m/Y H:i:s" }}
+            </td>
+            
+            <td class="fw-semibold text-dark">
+              {{ log.usuario.username|default:"Sistema" }}
+            </td>
+            
+            <td>
+              {% if log.accion == 'pago_proveedor' or log.accion == 'pago_cliente' %}
+                <span class="badge bg-success-subtle text-success border border-success-subtle">{{ log.get_accion_display }}</span>
+              {% elif log.accion == 'crear_cliente' or log.accion == 'editar_cliente' %}
+                <span class="badge bg-info-subtle text-info border border-info-subtle">{{ log.get_accion_display }}</span>
+              {% else %}
+                <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle">{{ log.get_accion_display }}</span>
+              {% endif %}
+            </td>
+            
+            <td class="text-muted" title="{{ log.descripcion }}" style="cursor: help;">
+              {{ log.descripcion|truncatechars:80 }}
+            </td>
+            
+            <td class="pe-3">
+              <code class="text-dark bg-light px-2 py-1 rounded small">
+                {{ log.ip_address|default:"—" }}
+              </code>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="5" class="text-center text-muted py-5">
+              <i class="fas fa-history d-block fs-2 mb-2 text-black-50"></i>
+              No se encontraron registros de auditoría en el sistema.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="card-body pt-0">
+    {% include 'core/_paginacion.html' %}
+  </div>
+</div>
+{% endblock %}

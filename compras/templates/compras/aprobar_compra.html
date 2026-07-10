@@ -1,0 +1,153 @@
+{% extends 'core/base.html' %}
+{% block titulo %}Aprobar orden {{ compra.numero_referencia }} — Inversiones Ramón{% endblock %}
+{% block topbar_titulo %}Aprobar / Rechazar orden{% endblock %}
+
+{% block contenido %}
+<div class="row g-3">
+  <div class="col-lg-5">
+    <div class="card mb-3 shadow-sm">
+      <div class="card-header fw-bold bg-light">Resumen de la solicitud</div>
+      <div class="card-body">
+        <div class="row g-2">
+          <div class="col-6"><div class="text-muted small">Referencia</div><code>{{ compra.numero_referencia }}</code></div>
+          <div class="col-6"><div class="text-muted small">Proveedor</div><strong>{{ compra.proveedor.nombre }}</strong></div>
+          <div class="col-6"><div class="text-muted small">Creada por</div>{{ compra.creada_por.get_nombre_completo|default:compra.creada_por.username }}</div>
+          <div class="col-6"><div class="text-muted small">F. creación</div>{{ compra.fecha_creacion|date:"d/m/Y H:i" }}</div>
+          <div class="col-6"><div class="text-muted small">F. estimada entrega</div>{{ compra.fecha_estimada|date:"d/m/Y"|default:"No indicada" }}</div>
+          <div class="col-6"><div class="text-muted small">Total estimado</div><strong class="text-primary">Bs. {{ compra.total|floatformat:2 }}</strong></div>
+          {% if compra.observacion %}
+          <div class="col-12"><div class="text-muted small">Observaciones</div><p class="mb-0 text-secondary bg-light p-2 rounded small">{{ compra.observacion }}</p></div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <div class="card shadow-sm">
+      <div class="card-header fw-bold bg-light">Tu decisión</div>
+      <div class="card-body">
+        <form method="post" id="aprobar-form">
+          {% csrf_token %}
+          
+          {% if form.non_field_errors %}
+          <div class="alert alert-danger py-2 small mb-3">
+            {% for error in form.non_field_errors %}
+              <i class="bi bi-exclamation-triangle me-1"></i> {{ error }}
+            {% endfor %}
+          </div>
+          {% endif %}
+          
+          <div class="mb-3">
+            {% for radio in form.decision %}
+            <div class="form-check mb-2">
+              {{ radio.tag }}
+              <label class="form-check-label fw-semibold" for="{{ radio.id_for_label }}">
+                {{ radio.choice_label }}
+              </label>
+            </div>
+            {% endfor %}
+            {% if form.decision.errors %}
+            <div class="text-danger small">
+              {% for error in form.decision.errors %}{{ error }}{% endfor %}
+            </div>
+            {% endif %}
+          </div>
+          
+          <div class="mb-3" id="motivo-wrapper" style="display:none">
+            <label class="form-label fw-semibold text-danger">{{ form.motivo_rechazo.label }}</label>
+            {{ form.motivo_rechazo }}
+            {% if form.motivo_rechazo.errors %}
+            <div class="text-danger small mt-1">
+              {% for error in form.motivo_rechazo.errors %}
+                <i class="bi bi-exclamation-circle-fill me-1"></i>{{ error }}
+              {% endfor %}
+            </div>
+            {% endif %}
+          </div>
+          
+          <div class="d-flex gap-2 pt-3 border-top">
+            <button type="submit" class="btn btn-primary">
+              <i class="bi bi-check-circle me-1"></i>Confirmar decisión
+            </button>
+            <a href="{% url 'compras:detalle_compra' compra.pk %}" class="btn btn-outline-secondary">
+              Cancelar
+            </a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-7">
+    <div class="card shadow-sm">
+      <div class="card-header fw-bold bg-light">Productos solicitados</div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+              <tr>
+                <th>Producto</th>
+                <th class="text-center">Cantidad</th>
+                <th class="text-end">Precio unit.</th>
+                <th class="text-end">Subtotal</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for d in detalles %}
+              <tr>
+                <td>
+                  <span class="fw-semibold">{{ d.producto.nombre }}</span>
+                  <div class="text-muted" style="font-size:.75rem">
+                    <code>{{ d.producto.codigo }}</code> | Stock actual: 
+                    <span class="badge {% if d.producto.stock_actual <= d.producto.stock_minimo %}bg-danger{% else %}bg-secondary{% endif %}">
+                      {{ d.producto.stock_actual }}
+                    </span>
+                  </div>
+                </td>
+                <td class="text-center fw-bold">{{ d.cantidad_pedida }}</td>
+                <td class="text-end">Bs. {{ d.precio_unitario|floatformat:2 }}</td>
+                <td class="text-end fw-semibold">Bs. {{ d.subtotal|floatformat:2 }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+            <tfoot class="table-light border-top-2">
+              <tr>
+                <td colspan="3" class="text-end fw-bold fs-6">Total estimado de la orden:</td>
+                <td class="text-end fw-bold text-primary fs-6">Bs. {{ compra.total|floatformat:2 }}</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const wrapper = document.getElementById('motivo-wrapper');
+  
+  function verificarEstado() {
+    const seleccionado = document.querySelector('input[name="decision"]:checked');
+    if (seleccionado && seleccionado.value === 'rechazada') {
+      wrapper.style.display = 'block';
+      const textarea = wrapper.querySelector('textarea');
+      if (textarea && !textarea.classList.contains('is-invalid') && document.querySelector('.text-danger')) {
+        textarea.classList.add('is-invalid');
+      }
+    } else {
+      wrapper.style.display = 'none';
+    }
+  }
+
+  // Escuchar los cambios de los botones tipo radio
+  document.querySelectorAll('input[name="decision"]').forEach(r => {
+    r.addEventListener('change', verificarEstado);
+  });
+
+  // Evaluar el estado inmediatamente al cargar el DOM (Resistente a recargas por fallos de validación)
+  verificarEstado();
+});
+</script>
+{% endblock %}

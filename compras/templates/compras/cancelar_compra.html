@@ -1,0 +1,62 @@
+{% extends 'core/base.html' %}
+{% block titulo %}Cancelar orden {{ compra.numero_referencia }} — Inversiones Ramón{% endblock %}
+{% block topbar_titulo %}Cancelar orden de compra{% endblock %}
+
+{% block contenido %}
+<div class="row justify-content-center animate__animated animate__fadeIn">
+  <div class="col-lg-5">
+    <div class="card border-danger shadow-sm">
+      <div class="card-header bg-danger text-white fw-bold d-flex align-items-center gap-2">
+        <i class="bi bi-x-circle-fill"></i>
+        <span>Confirmar cancelación</span>
+      </div>
+      <div class="card-body">
+        <div class="text-center my-3 text-danger">
+          <i class="bi bi-exclamation-triangle-fill" style="font-size: 3rem;"></i>
+        </div>
+        
+        <p class="fs-5 text-center mb-1">
+          ¿Seguro que deseas cancelar la orden de compra?
+        </p>
+        <div class="text-center mb-4">
+          <code class="fs-5 fw-bold text-dark">{{ compra.numero_referencia }}</code>
+        </div>
+
+        <div class="bg-light p-3 rounded mb-3 border-start border-3 border-secondary">
+          <div class="text-muted small">Proveedor asignado:</div>
+          <strong class="text-dark">{{ compra.proveedor.nombre }}</strong>
+          <div class="text-muted small mt-2">Monto total de la orden:</div>
+          <span class="fw-semibold text-primary">Bs. {{ compra.total|floatformat:2 }}</span>
+        </div>
+
+        <div class="alert alert-warning d-flex align-items-center gap-2 py-2 small" role="alert">
+          <i class="bi bi-info-circle-fill flex-shrink-0"></i>
+          <div>Esta acción es definitiva, cambiará el estado a <strong>Cancelada</strong> y no se podrá revertir.</div>
+        </div>
+
+        <form method="post" class="pt-2 border-top">
+          {% csrf_token %}
+          
+          {% if form.non_field_errors %}
+          <div class="alert alert-danger py-2 small mb-3">
+            {% for error in form.non_field_errors %}
+              <i class="bi bi-exclamation-octagon-fill me-1"></i> {{ error }}
+            {% endfor %}
+          </div>
+          {% endif %}
+          
+          <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-danger w-100 d-flex align-items-center justify-content-center gap-1">
+              <i class="bi bi-trash-fill"></i> Sí, cancelar orden
+            </button>
+            <a href="{% url 'compras:detalle_compra' compra.pk %}" 
+               class="btn btn-secondary w-100 d-flex align-items-center justify-content-center gap-1">
+              <i class="bi bi-arrow-left-short fs-5"></i> Volver al detalle
+            </a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
