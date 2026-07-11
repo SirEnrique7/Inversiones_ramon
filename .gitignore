@@ -1,3 +1,48 @@
+# Django / Python / VS Code / Windows ignore rules
+
+# Entornos virtuales
+.venv/
+venv/
+env/
+ENV/
+.env
+.env.*
+
+# Python bytecode y caches
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+
+# Base de datos y archivos locales
+*.sqlite3
+*.db
+db.sqlite3
+db.sqlite3-journal
+media/
+staticfiles/
+local_settings.py
+
+# Logs y temporales
+*.log
+*.tmp
+*.temp
+
+# IDE / editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
+
 # Created by https://www.toptal.com/developers/gitignore/api/windows,python,django
 # Edit at https://www.toptal.com/developers/gitignore?templates=windows,python,django
 
