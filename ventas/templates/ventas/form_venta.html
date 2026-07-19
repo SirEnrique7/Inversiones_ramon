@@ -5,10 +5,12 @@
 {% block extra_css %}
 <style>
   .formset-row {
+    display: flex; align-items: flex-start; gap: .6rem;
     background: #f9fafb; border: 1px solid #e2e8f0;
-    border-radius: 10px; padding: 1rem; margin-bottom: .6rem; position: relative;
+    border-radius: 10px; padding: 1rem; margin-bottom: .6rem;
   }
-  .btn-remove-row { position: absolute; top: .5rem; right: .5rem; }
+  .formset-row > .row { flex: 1 1 auto; min-width: 0; }
+  .btn-remove-row { flex: 0 0 auto; order: 2; margin-top: .15rem; }
   #cliente-wrapper, #fecha-pago-wrapper { display: none; }
   .stock-badge { font-size: .72rem; margin-top: .25rem; min-height: 1rem; }
   .tasa-info {
@@ -295,6 +297,10 @@
       var pid = sel.value;
       if (!pid) {
         if (badge) badge.textContent = '';
+        if (priceField) {
+          priceField.value = '';
+          priceField.dataset.userEdited = 'false';
+        }
         calcularFila(row);
         calcularTotales();
         return;
@@ -306,10 +312,14 @@
             badge.textContent = 'Stock disponible: ' + d.stock;
             badge.style.color = (d.stock <= 5) ? '#dc2626' : '#64748b';
           }
-          // Sólo autocompletar si el precio está vacío o es cero
-          if (priceField) {
-            var pv = parseFloat(priceField.value) || 0;
-            if (pv === 0) priceField.value = d.precio_venta;
+          // Autocompletar SIEMPRE que el precio actual haya sido puesto por
+          // este mismo script (o esté vacío) — solo se respeta si el
+          // usuario lo escribió a mano. Antes solo se llenaba si el campo
+          // estaba en 0, así que al cambiar de un producto a otro DENTRO
+          // de la misma fila, el precio del producto anterior se quedaba
+          // pegado sin actualizarse al del nuevo producto seleccionado.
+          if (priceField && priceField.dataset.userEdited !== 'true') {
+            priceField.value = d.precio_venta;
           }
           calcularFila(row);
           calcularTotales();
@@ -318,7 +328,13 @@
     });
 
     if (cantField)  cantField.addEventListener('input',  function () { calcularFila(row); calcularTotales(); });
-    if (priceField) priceField.addEventListener('input', function () { calcularFila(row); calcularTotales(); });
+    if (priceField) priceField.addEventListener('input', function () {
+      // Esto solo se dispara con tecleo real del usuario (asignar .value
+      // desde el script no dispara 'input'), así que marca de forma
+      // confiable cuándo el precio fue editado a mano.
+      priceField.dataset.userEdited = 'true';
+      calcularFila(row); calcularTotales();
+    });
   }
 
   // ── Agregar nueva fila desde <template> ─────────────

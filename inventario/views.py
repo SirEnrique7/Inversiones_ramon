@@ -48,8 +48,6 @@ def dashboard(request):
 
 @login_requerido
 def lista_productos(request):
-    import csv
-    from django.http import HttpResponse
     from django.core.paginator import Paginator
 
     query      = request.GET.get('q', '')
@@ -69,18 +67,19 @@ def lista_productos(request):
 
     qs = qs.order_by('nombre')
 
-    # ── Exportar CSV ──
-    if request.GET.get('export') == 'csv':
-        response = HttpResponse(content_type='text/csv; charset=utf-8-sig')
-        response['Content-Disposition'] = 'attachment; filename="productos.csv"'
-        writer = csv.writer(response)
-        writer.writerow([
+    # ── Exportar a Excel ──
+    # Se acepta también 'csv' como alias por compatibilidad con enlaces o
+    # marcadores antiguos, pero siempre se entrega un .xlsx real — ya no
+    # se genera CSV en ningún caso.
+    if request.GET.get('export') in ('excel', 'csv'):
+        from core.excel_utils import exportar_excel
+        headers = [
             'Código', 'Nombre', 'Categoría', 'Proveedor',
             'Precio Compra Bs', 'Precio Venta Bs',
             'Stock Actual', 'Stock Mínimo', 'Estado',
-        ])
-        for p in qs:
-            writer.writerow([
+        ]
+        filas = [
+            [
                 p.codigo or '',
                 p.nombre,
                 p.categoria.nombre if p.categoria else '',
@@ -90,8 +89,10 @@ def lista_productos(request):
                 p.stock_actual,
                 p.stock_minimo,
                 'Activo' if p.activo else 'Inactivo',
-            ])
-        return response
+            ]
+            for p in qs
+        ]
+        return exportar_excel('Productos', headers, filas, 'productos.xlsx')
 
     categorias = Categoria.objects.all()
 

@@ -3,9 +3,9 @@
 {% block topbar_titulo %}Ventas{% endblock %}
 
 {% block topbar_acciones %}
-<a href="?{% if filter_params %}{{ filter_params }}&{% endif %}export=csv"
+<a href="?{% if filter_params %}{{ filter_params }}&{% endif %}export=excel"
    class="btn btn-sm btn-outline-success">
-  <i class="bi bi-file-earmark-spreadsheet me-1"></i>Exportar CSV
+  <i class="bi bi-file-earmark-excel me-1"></i>Exportar Excel
 </a>
 <a href="{% url 'ventas:crear_venta' %}" class="btn btn-sm btn-primary">
   <i class="bi bi-plus-lg me-1"></i>Nueva venta

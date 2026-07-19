@@ -159,11 +159,15 @@ class RecepcionCompraForm(forms.ModelForm):
         cleaned = super().clean()
         modalidad = cleaned.get('modalidad_pago')
         venc = cleaned.get('fecha_vencimiento')
-        ref = cleaned.get('referencia_documento')
+        ref = (cleaned.get('referencia_documento') or '').strip()
 
         if not ref:
             self.add_error('referencia_documento', 'La referencia del documento es obligatoria para auditoría.')
-        
+        elif len(ref) < 3:
+            self.add_error('referencia_documento', 'La referencia debe tener al menos 3 caracteres.')
+        else:
+            cleaned['referencia_documento'] = ref
+
         if modalidad == 'credito' and not venc:
             self.add_error('fecha_vencimiento', 'Debe indicar la fecha límite de pago para crédito.')
         return cleaned

@@ -340,12 +340,12 @@ tuyos reales, y presiona Enter:
 from core.models import Usuario
 Usuario.objects.create_superuser(
     username='admin',
-    email='jesusenrique13721@gmail.com',
+    email='tu_correo@ejemplo.com',
     password='TuContraseñaSegura123',
-    cedula='V-28678546',
+    cedula='V-00000000',
     rol='admin',
-    first_name='Enrique',
-    last_name='Bolivar'
+    first_name='Tu Nombre',
+    last_name='Tu Apellido'
 )
 ```
 

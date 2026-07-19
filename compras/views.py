@@ -38,8 +38,6 @@ if TYPE_CHECKING:
 # ─────────────────────────────────────────────
 @login_requerido
 def lista_compras(request):
-    import csv
-    from django.http import HttpResponse
     from django.core.paginator import Paginator
 
     estado = request.GET.get('estado', '')
@@ -60,26 +58,29 @@ def lista_compras(request):
 
     qs = qs.order_by('-fecha_creacion')
 
-    # ── Exportar CSV ──
-    if request.GET.get('export') == 'csv':
-        response = HttpResponse(content_type='text/csv; charset=utf-8-sig')
-        response['Content-Disposition'] = 'attachment; filename="compras.csv"'
-        writer = csv.writer(response)
-        writer.writerow([
+    # ── Exportar a Excel ──
+    # Se acepta también 'csv' como alias por compatibilidad con enlaces o
+    # marcadores antiguos, pero siempre se entrega un .xlsx real — ya no
+    # se genera CSV en ningún caso.
+    if request.GET.get('export') in ('excel', 'csv'):
+        from core.excel_utils import exportar_excel
+        headers = [
             'N° Referencia', 'Fecha Creación', 'Proveedor', 'Estado',
             'Total Bs', 'Fecha Estimada', 'Creada por',
-        ])
-        for c in qs:
-            writer.writerow([
+        ]
+        filas = [
+            [
                 c.numero_referencia,
                 c.fecha_creacion.strftime('%d/%m/%Y'),
                 c.proveedor.nombre,
                 c.get_estado_display(),
-                c.total or '',
+                c.total,
                 c.fecha_estimada.strftime('%d/%m/%Y') if c.fecha_estimada else '',
                 c.creada_por.get_nombre_completo() if c.creada_por else '',
-            ])
-        return response
+            ]
+            for c in qs
+        ]
+        return exportar_excel('Compras', headers, filas, 'compras.xlsx')
 
     pendientes = Compra.objects.filter(estado='pendiente').count() if request.user.es_admin() else 0
 
@@ -163,7 +164,12 @@ def crear_compra(request):
         else:
             messages.error(request, 'Revisa los errores en el formulario de productos.')
     else:
-        form    = CompraForm()
+        # Si se llegó con ?proveedor=X (por ejemplo, desde el botón de
+        # Reportes → Abastecimiento Crítico), preseleccionamos ese mismo
+        # proveedor en el formulario — antes quedaba vacío aunque las
+        # sugerencias mostradas sí correspondían a ese proveedor.
+        initial = {'proveedor': proveedor_id} if proveedor_id else {}
+        form    = CompraForm(initial=initial)
         formset = DetalleCompraFormSet(queryset=DetalleCompra.objects.none(), prefix='form')
 
     return render(request, 'compras/form_compra.html', {

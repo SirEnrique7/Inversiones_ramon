@@ -5,10 +5,12 @@
 {% block extra_css %}
 <style>
   .formset-row {
+    display: flex; align-items: flex-start; gap: .6rem;
     background: #f9fafb; border: 1px solid #e2e8f0;
-    border-radius: 10px; padding: 1rem; margin-bottom: .6rem; position: relative;
+    border-radius: 10px; padding: 1rem; margin-bottom: .6rem;
   }
-  .btn-remove-row { position: absolute; top: .5rem; right: .5rem; }
+  .formset-row > .row { flex: 1 1 auto; min-width: 0; }
+  .btn-remove-row { flex: 0 0 auto; order: 2; margin-top: .15rem; }
   .sugerencia-card {
     background: #eff6ff; border: 1px solid #bfdbfe;
     border-radius: 10px; padding: .85rem 1rem; margin-top: 1rem;
@@ -243,6 +245,10 @@
       var pid = sel.value;
       if (!pid) {
         if (badge) badge.textContent = '';
+        if (priceField) {
+          priceField.value = '';
+          priceField.dataset.userEdited = 'false';
+        }
         calcularFila(row);
         calcularTotal();
         return;
@@ -254,10 +260,12 @@
             badge.textContent = 'Stock actual: ' + d.stock;
             badge.style.color = '#64748b';
           }
-          // Autocompletar precio de compra si está vacío o en cero
-          if (priceField) {
-            var pc = parseFloat(priceField.value) || 0;
-            if (pc === 0) priceField.value = d.precio_compra;
+          // Autocompletar SIEMPRE que el precio no haya sido editado a mano
+          // por el usuario — antes solo se llenaba si el campo estaba en 0,
+          // así que al cambiar de un producto a otro en la misma fila el
+          // precio del producto anterior se quedaba pegado sin actualizar.
+          if (priceField && priceField.dataset.userEdited !== 'true') {
+            priceField.value = d.precio_compra;
           }
           calcularFila(row);
           calcularTotal();
@@ -266,7 +274,13 @@
     });
 
     if (cantField)  cantField.addEventListener('input',  function () { calcularFila(row); calcularTotal(); });
-    if (priceField) priceField.addEventListener('input', function () { calcularFila(row); calcularTotal(); });
+    if (priceField) priceField.addEventListener('input', function () {
+      // Solo se dispara con tecleo real del usuario (asignar .value desde
+      // el script no dispara 'input'), así que marca de forma confiable
+      // cuándo el precio fue editado a mano.
+      priceField.dataset.userEdited = 'true';
+      calcularFila(row); calcularTotal();
+    });
   }
 
   // ── Reindexar formset (mantiene Management Form consistente) ─
@@ -309,6 +323,17 @@
     reindexar();
     calcularTotal();
     nuevaFila.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+    // Si la fila viene de una sugerencia (con producto ya elegido), disparamos
+    // el mismo evento 'change' que se dispara al elegir un producto manualmente.
+    // Antes esta ruta solo copiaba el precio que traía el botón al cargar la
+    // página (podía quedar desactualizado) y nunca mostraba el stock actual;
+    // con esto, la fila queda sincronizada igual que si se hubiera
+    // seleccionado el producto a mano del menú desplegable.
+    if (datos && datos.producto_id) {
+      var selNueva = nuevaFila.querySelector('.producto-select');
+      if (selNueva) selNueva.dispatchEvent(new Event('change'));
+    }
   }
 
   // ── Eliminar fila ────────────────────────────────────

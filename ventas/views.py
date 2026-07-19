@@ -7,7 +7,6 @@ from django.contrib import messages
 from django.utils import timezone
 from django.db import transaction
 from django.db.models import Q, Sum
-from django.http import HttpResponse
 from decimal import Decimal
 
 from .models import Venta, DetalleVenta
@@ -24,7 +23,6 @@ from inventario.models       import MovimientoInventario, Producto
 
 @login_requerido
 def lista_ventas(request):
-    import csv
     from django.core.paginator import Paginator
 
     estado = request.GET.get('estado', '')
@@ -49,18 +47,19 @@ def lista_ventas(request):
 
     qs = qs.order_by('-fecha', '-hora')
 
-    # ── Exportar CSV (respeta filtros activos) ──
-    if request.GET.get('export') == 'csv':
-        response = HttpResponse(content_type='text/csv; charset=utf-8-sig')
-        response['Content-Disposition'] = 'attachment; filename="ventas.csv"'
-        writer = csv.writer(response)
-        writer.writerow([
+    # ── Exportar a Excel (respeta filtros activos) ──
+    # Se acepta también 'csv' como alias por compatibilidad con enlaces o
+    # marcadores antiguos, pero siempre se entrega un .xlsx real — ya no
+    # se genera CSV en ningún caso.
+    if request.GET.get('export') in ('excel', 'csv'):
+        from core.excel_utils import exportar_excel
+        headers = [
             'N° Factura', 'Fecha', 'Hora', 'Cliente', 'Cédula/RIF',
             'Empleado', 'Método Pago', 'Estado',
             'Subtotal Bs', 'IVA Bs', 'Total Bs', 'Total USD', 'Tasa BCV',
-        ])
-        for v in qs:
-            writer.writerow([
+        ]
+        filas = [
+            [
                 v.numero_factura,
                 v.fecha.strftime('%d/%m/%Y'),
                 v.hora.strftime('%H:%M') if v.hora else '',
@@ -70,9 +69,11 @@ def lista_ventas(request):
                 v.get_metodo_pago_display(),
                 v.get_estado_display(),
                 v.subtotal_bs, v.iva_bs, v.total_bs,
-                v.total_usd or '', v.tasa_bcv_momento or '',
-            ])
-        return response
+                v.total_usd, v.tasa_bcv_momento,
+            ]
+            for v in qs
+        ]
+        return exportar_excel('Ventas', headers, filas, 'ventas.xlsx')
 
     # ── Totales del día (solo admin) ──
     totales = {}
