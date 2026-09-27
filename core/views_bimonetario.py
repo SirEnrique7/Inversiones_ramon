@@ -3,6 +3,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.db.models import Sum, Count, Q
 from django.db.models.functions import Coalesce
+from django.urls import reverse
 from decimal import Decimal
 from datetime import date
 
@@ -69,9 +70,15 @@ def detalle_cuenta_pagar(request, pk):
 def registrar_abono_proveedor(request, pk):
     cuenta = get_object_or_404(CuentaPorPagar, pk=pk)
 
+    # ── Soporte de redirección de retorno (ej: desde detalle de compra) ──
+    next_url = request.GET.get('next') or request.POST.get('next') or ''
+    # Seguridad: sólo permitir rutas relativas internas
+    if next_url and not next_url.startswith('/'):
+        next_url = ''
+
     if cuenta.estado == 'saldada':
         messages.info(request, 'Esta cuenta ya está saldada.')
-        return redirect('core:detalle_cuenta_pagar', pk=pk)
+        return redirect(next_url or 'core:detalle_cuenta_pagar', pk=pk)
 
     if request.method == 'POST':
         # Lock dentro del POST para no bloquear filas en GETs
@@ -82,7 +89,7 @@ def registrar_abono_proveedor(request, pk):
             # Re-verificar estado tras adquirir el lock
             if cuenta.estado == 'saldada':
                 messages.info(request, 'Esta cuenta fue saldada por otra operación.')
-                return redirect('core:detalle_cuenta_pagar', pk=pk)
+                return redirect(next_url or reverse('core:detalle_cuenta_pagar', args=[pk]))
 
             form = AbonoProveedorForm(request.POST, cuenta=cuenta)
             if form.is_valid():
@@ -106,7 +113,7 @@ def registrar_abono_proveedor(request, pk):
                     for error in errors:
                         messages.error(request, f'{field}: {error}')
 
-    return redirect('core:detalle_cuenta_pagar', pk=pk)
+    return redirect(next_url or reverse('core:detalle_cuenta_pagar', args=[pk]))
 
 
 # ══════════════════════════════════════════════

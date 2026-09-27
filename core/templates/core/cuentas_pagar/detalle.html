@@ -16,7 +16,8 @@
     </div></div>
     {% if cuenta.estado != 'saldada' %}
     <div class="card"><div class="card-header">Registrar pago al proveedor</div><div class="card-body">
-      <form method="post" action="{% url 'core:registrar_abono_proveedor' cuenta.pk %}">{% csrf_token %}
+      <form method="post" action="{% url 'core:registrar_abono_proveedor' cuenta.pk %}" id="form-pago">{% csrf_token %}
+        {% if request.GET.next %}<input type="hidden" name="next" value="{{ request.GET.next }}">{% endif %}
         {{ form.tasa_bcv.as_hidden }}
         <div class="mb-3"><label class="form-label fw-semibold">{{ form.monto_bs.label }}</label>{{ form.monto_bs }}</div>
         <div class="mb-3"><label class="form-label fw-semibold">{{ form.referencia.label }}</label>{{ form.referencia }}<div class="form-text">Obligatorio para auditoría.</div></div>

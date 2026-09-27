@@ -8,7 +8,7 @@ import requests
 import urllib3
 from decimal import Decimal, InvalidOperation
 
-from django.db import connection
+from django.db import connection, IntegrityError
 
 logger = logging.getLogger(__name__)
 
@@ -100,11 +100,23 @@ def actualizar_tasa_hoy():
 
         tasa = extraer_tasa_bcv()
         if tasa:
-            TasaCambio.objects.create(
-                fecha=hoy,
-                tasa_bs_usd=tasa,
-                fuente="bcv.org.ve",
-            )
+            try:
+                TasaCambio.objects.create(
+                    fecha=hoy,
+                    tasa_bs_usd=tasa,
+                    fuente="bcv.org.ve",
+                )
+            except IntegrityError:
+                # Otro hilo/proceso ganó la carrera y ya creó la tasa de hoy
+                # entre nuestro chequeo `if existente` y este create() —
+                # perfectamente normal cuando varios usuarios inician sesión
+                # casi al mismo tiempo y cada login dispara su propio hilo.
+                # No es un error real: simplemente usamos la que ya quedó
+                # guardada, sin propagar una excepción que ensuciaría los
+                # logs con un traceback de un caso ya resuelto.
+                existente = TasaCambio.objects.filter(fecha=hoy).first()
+                return (existente.tasa_bs_usd, False) if existente else (tasa, False)
+
             try:
                 AuditoriaAccion.registrar(
                     usuario=None,

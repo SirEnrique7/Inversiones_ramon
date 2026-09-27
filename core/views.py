@@ -10,7 +10,10 @@ from django.conf import settings
 from django.urls import reverse
 from django.db.models import F, Q, Sum, Count
 import json
+import logging
 from datetime import date, timedelta
+
+logger = logging.getLogger(__name__)
 
 from .models import Usuario, TasaCambio, AuditoriaAccion
 from .forms import (
@@ -31,11 +34,38 @@ def vista_login(request):
     if request.user.is_authenticated:
         return redirect('core:dashboard')
 
+    # ── Protección contra fuerza bruta ──────────────────────────────────────
+    # Se almacenan intentos fallidos en sesión. Tras 5 fallos consecutivos,
+    # el usuario debe esperar 15 minutos antes de intentar de nuevo.
+    MAX_INTENTOS   = 5
+    BLOQUEO_SEG    = 900  # 15 minutos
+    intentos       = request.session.get('login_intentos', 0)
+    bloqueado_desde = request.session.get('login_bloqueado_desde', None)
+
+    if bloqueado_desde:
+        import time
+        segundos_transcurridos = time.time() - bloqueado_desde
+        if segundos_transcurridos < BLOQUEO_SEG:
+            minutos_restantes = int((BLOQUEO_SEG - segundos_transcurridos) // 60) + 1
+            messages.error(
+                request,
+                f'Demasiados intentos fallidos. Intente de nuevo en {minutos_restantes} minuto(s).'
+            )
+            return render(request, 'core/login.html', {'form': LoginForm(), 'bloqueado': True})
+        else:
+            # Desbloquear: limpiar contadores
+            request.session.pop('login_intentos', None)
+            request.session.pop('login_bloqueado_desde', None)
+            intentos = 0
+
     form = LoginForm(request, data=request.POST or None)
 
     if request.method == 'POST':
         if form.is_valid():
             usuario = form.get_user()
+            # Login exitoso — limpiar contadores de intento
+            request.session.pop('login_intentos', None)
+            request.session.pop('login_bloqueado_desde', None)
             login(request, usuario)
 
             AuditoriaAccion.registrar(
@@ -54,9 +84,23 @@ def vista_login(request):
             return redirect('core:dashboard')
         else:
             username_intent = request.POST.get('username', '')
+            # Incrementar contador de intentos fallidos
+            intentos += 1
+            request.session['login_intentos'] = intentos
+            if intentos >= MAX_INTENTOS:
+                import time
+                request.session['login_bloqueado_desde'] = time.time()
+                AuditoriaAccion.registrar(
+                    usuario=None, accion='login_bloqueado',
+                    descripcion=f'Cuenta bloqueada temporalmente tras {MAX_INTENTOS} intentos fallidos para: "{username_intent}"',
+                    request=request,
+                )
+                messages.error(request, f'Demasiados intentos fallidos. Acceso bloqueado por 15 minutos.')
+                return render(request, 'core/login.html', {'form': LoginForm(), 'bloqueado': True})
+
             AuditoriaAccion.registrar(
                 usuario=None, accion='login_fallido',
-                descripcion=f'Intento fallido para usuario: "{username_intent}"',
+                descripcion=f'Intento fallido ({intentos}/{MAX_INTENTOS}) para usuario: "{username_intent}"',
                 request=request,
             )
             messages.error(request, 'Usuario o contraseña incorrectos.')
@@ -127,7 +171,9 @@ def dashboard(request):
         ).aggregate(t=Sum('total_bs'))['t'] or 0
 
         # ── Chart 1: ventas últimos 7 días — una sola query ──
-        from django.db.models.functions import TruncDate
+        # CORRECCIÓN: 'fecha' es DateField (no DateTimeField), por lo que
+        # TruncDate no aplica y falla en algunos backends con USE_TZ=True.
+        # Se agrupa directamente por el campo fecha.
         hace_6 = hoy - timedelta(days=6)
         ventas_rango = (
             Venta.objects.filter(
@@ -135,12 +181,11 @@ def dashboard(request):
                 fecha__lte=hoy,
                 estado__in=['procesada', 'a_credito', 'pagada']
             )
-            .annotate(dia=TruncDate('fecha'))
-            .values('dia')
+            .values('fecha')
             .annotate(t=Sum('total_bs'))
-            .order_by('dia')
+            .order_by('fecha')
         )
-        ventas_por_dia = {row['dia']: row['t'] for row in ventas_rango}
+        ventas_por_dia = {row['fecha']: row['t'] for row in ventas_rango}
 
         labels_7d, ventas_7d = [], []
         for i in range(6, -1, -1):
@@ -167,6 +212,93 @@ def dashboard(request):
         # ── Actividad reciente ──
         actividad = AuditoriaAccion.objects.select_related('usuario').order_by('-id')[:6]
 
+        # ── Notificaciones internas ──────────────────────────────────────────
+        # Se generan en tiempo real al cargar el dashboard para el admin.
+        from inventario.models import SolicitudInventario
+        from core.models_bimonetario import CuentaPorCobrar, CuentaPorPagar
+        from django.utils import timezone as tz
+
+        hace_48h    = tz.now() - timedelta(hours=48)
+        proximos_7d = hoy + timedelta(days=7)
+
+        alertas = []
+
+        # 1. Solicitudes de inventario sin respuesta hace más de 48 h
+        sol_vencidas = SolicitudInventario.objects.filter(
+            estado='pendiente', fecha_solicitud__lt=hace_48h
+        ).count()
+        if sol_vencidas:
+            alertas.append({
+                'tipo':  'warning',
+                'icono': 'bi-clock-history',
+                'texto': f'{sol_vencidas} solicitud{"es" if sol_vencidas > 1 else ""} de inventario '
+                         f'lleva{"n" if sol_vencidas > 1 else ""} más de 48 h sin respuesta.',
+                'url':   '/inventario/solicitudes/',
+                'label': 'Ver solicitudes',
+            })
+
+        # 2. Cuentas por cobrar vencidas
+        cpc_vencidas = CuentaPorCobrar.objects.filter(
+            estado__in=['pendiente', 'abonada'],
+            fecha_estimada_pago__lt=hoy
+        ).count()
+        if cpc_vencidas:
+            alertas.append({
+                'tipo':  'danger',
+                'icono': 'bi-exclamation-triangle-fill',
+                'texto': f'{cpc_vencidas} cuenta{"s" if cpc_vencidas > 1 else ""} por cobrar '
+                         f'{"están vencidas" if cpc_vencidas > 1 else "está vencida"}.',
+                'url':   '/cuentas-cobrar/',
+                'label': 'Ver cuentas',
+            })
+
+        # 3. Cuentas por cobrar que vencen en los próximos 7 días
+        cpc_proximas = CuentaPorCobrar.objects.filter(
+            estado__in=['pendiente', 'abonada'],
+            fecha_estimada_pago__gte=hoy,
+            fecha_estimada_pago__lte=proximos_7d
+        ).count()
+        if cpc_proximas:
+            alertas.append({
+                'tipo':  'info',
+                'icono': 'bi-calendar2-event',
+                'texto': f'{cpc_proximas} cuenta{"s" if cpc_proximas > 1 else ""} por cobrar '
+                         f'vence{"n" if cpc_proximas > 1 else ""} en los próximos 7 días.',
+                'url':   '/cuentas-cobrar/',
+                'label': 'Ver cuentas',
+            })
+
+        # 4. Cuentas por pagar vencidas
+        cpp_vencidas = CuentaPorPagar.objects.filter(
+            estado__in=['pendiente', 'abonada'],
+            fecha_vencimiento__lt=hoy
+        ).count()
+        if cpp_vencidas:
+            alertas.append({
+                'tipo':  'danger',
+                'icono': 'bi-cash-coin',
+                'texto': f'{cpp_vencidas} cuenta{"s" if cpp_vencidas > 1 else ""} por pagar '
+                         f'{"están vencidas" if cpp_vencidas > 1 else "está vencida"} al proveedor.',
+                'url':   '/cuentas-pagar/',
+                'label': 'Ver cuentas',
+            })
+
+        # 5. Cuentas por pagar que vencen en los próximos 7 días
+        cpp_proximas = CuentaPorPagar.objects.filter(
+            estado__in=['pendiente', 'abonada'],
+            fecha_vencimiento__gte=hoy,
+            fecha_vencimiento__lte=proximos_7d
+        ).count()
+        if cpp_proximas:
+            alertas.append({
+                'tipo':  'warning',
+                'icono': 'bi-calendar2-check',
+                'texto': f'{cpp_proximas} cuenta{"s" if cpp_proximas > 1 else ""} por pagar '
+                         f'vence{"n" if cpp_proximas > 1 else ""} en los próximos 7 días.',
+                'url':   '/cuentas-pagar/',
+                'label': 'Ver cuentas',
+            })
+
         context.update({
             'chart_labels_7d':      json.dumps(labels_7d),
             'chart_ventas_7d':      json.dumps(ventas_7d),
@@ -176,6 +308,7 @@ def dashboard(request):
             'chart_criticos_stock':   json.dumps([c['stock_actual'] for c in criticos]),
             'chart_criticos_minimo':  json.dumps([c['stock_minimo'] for c in criticos]),
             'actividad_reciente':   actividad,
+            'alertas_dashboard':    alertas,
         })
 
     return render(request, 'core/dashboard.html', context)
@@ -309,18 +442,30 @@ def recuperar_password(request):
                 path_dinamico = reverse('core:reset_password', kwargs={'uidb64': uid, 'token': token})
                 enlace = request.build_absolute_uri(path_dinamico)
 
-                send_mail(
-                    subject='Recuperación de contraseña — Inversiones Ramón',
-                    message=(
-                        f'Hola {usuario.get_nombre_completo()},\n\n'
-                        f'Haz clic en el siguiente enlace para restablecer tu contraseña '
-                        f'(válido por 15 minutos):\n\n{enlace}\n\n'
-                        f'Si no solicitaste esto, ignora este mensaje.'
-                    ),
-                    from_email=settings.DEFAULT_FROM_EMAIL,
-                    recipient_list=[email],
-                    fail_silently=True,  # No exponemos errores SMTP al usuario
-                )
+                try:
+                    send_mail(
+                        subject='Recuperación de contraseña — Inversiones Ramón',
+                        message=(
+                            f'Hola {usuario.get_nombre_completo()},\n\n'
+                            f'Haz clic en el siguiente enlace para restablecer tu contraseña '
+                            f'(válido por 15 minutos):\n\n{enlace}\n\n'
+                            f'Si no solicitaste esto, ignora este mensaje.'
+                        ),
+                        from_email=settings.DEFAULT_FROM_EMAIL,
+                        recipient_list=[email],
+                        fail_silently=False,
+                    )
+                except Exception:
+                    # CRÍTICO: nunca dejar este fallo en silencio total. Si el SMTP
+                    # está mal configurado (credenciales, puerto bloqueado, etc.),
+                    # esto debe quedar en logs/errores.log para que el administrador
+                    # lo detecte — de lo contrario, los usuarios reportarían "nunca
+                    # me llegó el correo" sin ningún rastro de la causa real.
+                    # La respuesta al navegador NUNCA revela este fallo (ver abajo).
+                    logger.exception(
+                        'No se pudo enviar el correo de recuperación de contraseña '
+                        'para el usuario "%s" (%s).', usuario.username, email
+                    )
             except Usuario.DoesNotExist:
                 pass  # Silencioso: no revelar si el correo existe
 

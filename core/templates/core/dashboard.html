@@ -31,6 +31,22 @@
 
 {% block contenido %}
 
+{# ── Notificaciones internas (solo visible para admin) ── #}
+{% if alertas_dashboard %}
+<div class="mb-3" id="bloque-alertas">
+  {% for alerta in alertas_dashboard %}
+  <div class="alert alert-{{ alerta.tipo }} alert-dismissible d-flex align-items-center gap-2 py-2 mb-2 shadow-sm" role="alert">
+    <i class="bi {{ alerta.icono }} fs-5 flex-shrink-0"></i>
+    <span class="flex-grow-1">{{ alerta.texto }}</span>
+    <a href="{{ alerta.url }}" class="btn btn-sm btn-outline-{{ alerta.tipo }} py-0 px-2 fw-semibold flex-shrink-0" style="font-size:.75rem;">
+      {{ alerta.label }}
+    </a>
+    <button type="button" class="btn-close ms-1" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
 {# ── Fila 1: Stats siempre visibles ── #}
 <div class="row g-3 mb-3">
 
@@ -257,8 +273,8 @@ Chart.defaults.font.family = "'Inter', 'Segoe UI', sans-serif";
 Chart.defaults.font.size   = 12;
 
 // ── Chart 1: Ventas 7 días ─────────────────────────
-const labels7d  = JSON.parse('{{ chart_labels_7d|safe }}');
-const ventas7d  = JSON.parse('{{ chart_ventas_7d|safe }}');
+const labels7d  = JSON.parse('{{ chart_labels_7d|escapejs }}');
+const ventas7d  = JSON.parse('{{ chart_ventas_7d|escapejs }}');
 const ctxV = document.getElementById('chartVentas');
 if (ctxV) {
   const gradV = ctxV.getContext('2d').createLinearGradient(0, 0, 0, 260);
@@ -296,8 +312,8 @@ if (ctxV) {
 }
 
 // ── Chart 2: Compras por estado ─────────────────────
-const estadoLabels  = JSON.parse('{{ chart_estado_labels|safe }}');
-const estadoValores = JSON.parse('{{ chart_estado_valores|safe }}');
+const estadoLabels  = JSON.parse('{{ chart_estado_labels|escapejs }}');
+const estadoValores = JSON.parse('{{ chart_estado_valores|escapejs }}');
 const ctxC = document.getElementById('chartCompras');
 if (ctxC) {
   new Chart(ctxC, {
@@ -326,9 +342,9 @@ if (ctxC) {
 }
 
 // ── Chart 3: Stock crítico ──────────────────────────
-const stockNombres = JSON.parse('{{ chart_criticos_nombres|safe }}');
-const stockActual  = JSON.parse('{{ chart_criticos_stock|safe }}');
-const stockMinimo  = JSON.parse('{{ chart_criticos_minimo|safe }}');
+const stockNombres = JSON.parse('{{ chart_criticos_nombres|escapejs }}');
+const stockActual  = JSON.parse('{{ chart_criticos_stock|escapejs }}');
+const stockMinimo  = JSON.parse('{{ chart_criticos_minimo|escapejs }}');
 const ctxS = document.getElementById('chartStock');
 if (ctxS && stockNombres.length) {
   new Chart(ctxS, {

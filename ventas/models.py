@@ -29,7 +29,11 @@ class Venta(models.Model):
         'core.Usuario', on_delete=models.SET_NULL, null=True,
         related_name='ventas'
     )
-    fecha          = models.DateField(auto_now_add=True)
+    # db_index=True: 'fecha' es el filtro más frecuente de todo el sistema
+    # (dashboard, ambas ventanas del algoritmo de tendencias, reporte de
+    # ventas). Sin índice, cada una de esas consultas degrada a un escaneo
+    # completo de la tabla a medida que crece el histórico de ventas.
+    fecha          = models.DateField(auto_now_add=True, db_index=True)
     hora           = models.TimeField(auto_now_add=True)
 
     # ── Cliente (obligatorio para crédito) ──
@@ -73,6 +77,18 @@ class Venta(models.Model):
     observacion    = models.TextField(blank=True)
 
     # ─────────────────────────────────────────
+    def clean(self):
+        """Validaciones a nivel de modelo — se ejecutan también desde el admin."""
+        from django.core.exceptions import ValidationError
+        errors = {}
+        if self.metodo_pago == 'credito':
+            if not self.cliente:
+                errors['cliente'] = 'Las ventas a crédito requieren un cliente registrado.'
+            if not self.fecha_estimada_pago:
+                errors['fecha_estimada_pago'] = 'Las ventas a crédito requieren una fecha estimada de pago.'
+        if errors:
+            raise ValidationError(errors)
+
     def save(self, *args, **kwargs):
         if self.metodo_pago == 'credito' and not self.cliente:
             raise ValueError("Error: No se puede procesar una venta a crédito sin registrar un Cliente.")

@@ -29,7 +29,8 @@ class Compra(models.Model):
                                              null=True, blank=True, related_name='compras_aprobadas')
     proveedor            = models.ForeignKey('inventario.Proveedor', on_delete=models.PROTECT,
                                              related_name='compras')
-    fecha_creacion       = models.DateTimeField(auto_now_add=True)
+    # db_index=True: filtrada en el reporte de compras por rango de fechas.
+    fecha_creacion       = models.DateTimeField(auto_now_add=True, db_index=True)
     fecha_aprobacion     = models.DateTimeField(null=True, blank=True)
     fecha_estimada       = models.DateField(null=True, blank=True,
                                              verbose_name='Fecha estimada de entrega')

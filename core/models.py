@@ -161,7 +161,7 @@ class AuditoriaAccion(models.Model):
     ip_address     = models.GenericIPAddressField(null=True, blank=True)
     objeto_tipo    = models.CharField(max_length=50, blank=True)  # ej. 'Compra'
     objeto_id      = models.PositiveIntegerField(null=True, blank=True)
-    fecha          = models.DateTimeField(auto_now_add=True)
+    fecha          = models.DateTimeField(auto_now_add=True, db_index=True)
 
     # El log es inmutable: no se permite update ni delete desde el ORM
     def save(self, *args, **kwargs):

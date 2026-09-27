@@ -1,6 +1,5 @@
 from django import forms
 from django.core.exceptions import ValidationError
-from django.core.validators import RegexValidator, MinLengthValidator, MaxLengthValidator
 from decimal import Decimal, InvalidOperation
 import re
 from .models_bimonetario import CuentaPorPagar, CuentaPorCobrar, Cliente
@@ -32,19 +31,10 @@ class AbonoProveedorForm(forms.Form):
     )
     referencia = forms.CharField(
         label='Referencia bancaria / legal',
-        validators=[
-            RegexValidator(
-                regex=r'^\d+$',
-                message='La referencia debe contener solo números.'
-            ),
-            MinLengthValidator(4, message='La referencia debe tener al menos 4 dígitos.'),
-            MaxLengthValidator(21, message='La referencia no puede exceder los 21 dígitos.')
-        ],
+        max_length=100,
         widget=forms.TextInput(attrs={
             'class': 'form-control',
-            'placeholder': 'Nro. de transferencia, operación o nota de entrega',
-            'inputmode': 'numeric',
-            'maxlength': '21',
+            'placeholder': 'Nro. de transferencia, operación o nota de entrega'
         })
     )
 
@@ -100,19 +90,10 @@ class PagoClienteForm(forms.Form):
     )
     referencia = forms.CharField(
         label='Referencia bancaria / legal',
-        validators=[
-            RegexValidator(
-                regex=r'^\d+$',
-                message='La referencia debe contener solo números.'
-            ),
-            MinLengthValidator(4, message='La referencia debe tener al menos 4 dígitos.'),
-            MaxLengthValidator(21, message='La referencia no puede exceder los 21 dígitos.')
-        ],
+        max_length=100,
         widget=forms.TextInput(attrs={
             'class': 'form-control',
-            'placeholder': 'Nro. de transferencia o pago móvil',
-            'inputmode': 'numeric',
-            'maxlength': '21',
+            'placeholder': 'Nro. de transferencia o pago móvil'
         })
     )
 

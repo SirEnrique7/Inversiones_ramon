@@ -16,7 +16,7 @@ HTTPS, respaldos y verificación final.
 - [ ] 1. Paquetes del sistema (Python, PostgreSQL, Nginx)
 - [ ] 2. Base de datos PostgreSQL (ver `MIGRACION_POSTGRESQL.md`, Pasos 1-2)
 - [ ] 3. Código del proyecto + entorno virtual + dependencias
-- [ ] 4. `.env` de producción completo
+- [ ] 4. `.env` de producción completo, con permisos `600`
 - [ ] 5. Migraciones y datos (ver `MIGRACION_POSTGRESQL.md`, Pasos 4-5)
 - [ ] 6. Activar `settings_prod` (la pieza que enciende toda la seguridad)
 - [ ] 7. Archivos estáticos (`collectstatic`)
@@ -97,6 +97,35 @@ Generar un `SECRET_KEY` seguro:
 python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"
 ```
 
+### Permisos del archivo `.env` — no dejarlo legible por cualquiera
+
+Este archivo contiene la contraseña de PostgreSQL, la `SECRET_KEY` y la
+contraseña de aplicación del correo SMTP. Si se sube al servidor con los
+permisos por defecto de una transferencia normal (`644`), **cualquier
+usuario del sistema** con una cuenta en ese servidor puede leerlo con un
+simple `cat .env` — no hace falta ser root. En un VPS compartido o con
+varios desarrolladores/usuarios, esto es una fuga de credenciales real.
+
+```bash
+# Restringir lectura y escritura SOLO al usuario que ejecuta gunicorn
+sudo chown www-data:www-data /opt/inversiones_ramon/.env
+sudo chmod 600 /opt/inversiones_ramon/.env
+
+# Verificar: debe mostrar "-rw-------" y el dueño correcto
+ls -l /opt/inversiones_ramon/.env
+```
+
+`600` significa: solo el dueño del archivo puede leerlo y escribirlo —
+nadie más, ni siquiera otros usuarios del grupo. Como el servicio de
+gunicorn corre como `www-data` (ver Paso 8), ese es el único usuario que
+necesita acceso a este archivo.
+
+> ⚠️ Verifica también que `.env` esté en tu `.gitignore` **antes** de
+> subir el proyecto a cualquier repositorio, propio o de terceros. Si ya
+> se subió por error alguna vez, cambia todas las credenciales que
+> contenía — no basta con borrarlo del último commit, sigue existiendo
+> en el historial de Git.
+
 ---
 
 ## 5. Migraciones y carga de datos
@@ -168,6 +197,7 @@ WorkingDirectory=/opt/inversiones_ramon
 EnvironmentFile=/opt/inversiones_ramon/.env
 ExecStart=/opt/inversiones_ramon/venv/bin/gunicorn \
           --workers 3 \
+          --timeout 60 \
           --bind unix:/run/inversiones_ramon.sock \
           inversiones_ramon.wsgi:application
 
@@ -182,6 +212,14 @@ WantedBy=multi-user.target
 > que es lo que activa `settings_prod.py` (Paso 6). Asegúrate de que `.env`
 > **no** tenga espacios alrededor del `=` (formato `CLAVE=valor`, igual que
 > `.env.example`).
+
+> `--timeout 60`: gunicorn mata y reinicia cualquier worker que tarde más
+> de este valor en responder (el default es 30s). Los reportes de
+> ventas/compras/margen pueden tardar más de 30 segundos una vez que el
+> negocio acumule varios años de historial — sin este ajuste, ese reporte
+> se cortaría a la mitad con un error 502 justo cuando más datos tenga
+> para mostrar. 60s da margen sin dejar workers colgados indefinidamente
+> ante un problema real (por ejemplo, la base de datos caída).
 
 Ajusta `User`/`Group`/rutas según tu servidor, y asegúrate de que ese
 usuario sea **dueño** de `/opt/inversiones_ramon` (para poder escribir en
