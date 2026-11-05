@@ -19,7 +19,9 @@ gunicorn==21.2.0
 whitenoise==6.6.0
 
 # Base de datos PostgreSQL
-psycopg2-binary==2.9.12
+psycopg2-binary==2.9.13
 
 # Exportar listados a Excel (.xlsx real, no CSV)
 openpyxl==3.1.5
+
+
